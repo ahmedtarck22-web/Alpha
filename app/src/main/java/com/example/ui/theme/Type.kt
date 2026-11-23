@@ -23,8 +23,11 @@ val InterFontFamily = FontFamily(
     Font(R.font.inter, FontWeight.Bold)
 )
 
-// Semantic aliases so existing components inherit Cairo & Inter cleanly
-val CinzelFontFamily = CairoFontFamily
+val CinzelFontFamily = FontFamily(
+    Font(R.font.cinzel, FontWeight.Normal),
+    Font(R.font.cinzel, FontWeight.Medium),
+    Font(R.font.cinzel, FontWeight.Bold)
+)
 val AmiriFontFamily = CairoFontFamily
 
 val Typography = Typography(

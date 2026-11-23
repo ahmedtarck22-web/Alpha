@@ -8,7 +8,6 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
-import com.example.R
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
@@ -40,14 +39,14 @@ class FirebaseAuthManager(private val context: Context) {
         }
     }
 
-    private val auth: FirebaseAuth by lazy {
-        ensureFirebaseInitialized(context)
-        FirebaseAuth.getInstance()
+    private val auth: FirebaseAuth? by lazy {
+        if (!ensureFirebaseInitialized(context)) return@lazy null
+        runCatching { FirebaseAuth.getInstance() }.getOrNull()
     }
     private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _currentUser = MutableStateFlow<FirebaseUser?>(
-        runCatching { auth.currentUser }.getOrNull()
+        runCatching { auth?.currentUser }.getOrNull()
     )
     val currentUser: StateFlow<FirebaseUser?> = _currentUser.asStateFlow()
 
@@ -56,14 +55,24 @@ class FirebaseAuthManager(private val context: Context) {
     }
 
     init {
-        runCatching { auth.addAuthStateListener(authStateListener) }
+        runCatching { auth?.addAuthStateListener(authStateListener) }
             .onFailure { Log.w(TAG, "AuthStateListener registration deferred: ${it.message}") }
     }
 
     suspend fun signInWithGoogle(activity: Activity): Result<FirebaseUser> {
         return try {
+            val firebaseAuth = auth
+                ?: throw IllegalStateException("Firebase google-services.json is missing (FirebaseAuth not initialized).")
             val credentialManager = CredentialManager.create(activity)
-            val webClientId = activity.getString(R.string.default_web_client_id)
+            val webClientIdRes = activity.resources.getIdentifier(
+                "default_web_client_id",
+                "string",
+                activity.packageName
+            )
+            if (webClientIdRes == 0) {
+                throw IllegalStateException("Firebase google-services.json is missing (default_web_client_id not found).")
+            }
+            val webClientId = activity.getString(webClientIdRes)
 
             val googleOption = GetSignInWithGoogleOption.Builder(webClientId)
                 .build()
@@ -79,7 +88,7 @@ class FirebaseAuthManager(private val context: Context) {
             }
             val googleIdToken = GoogleIdTokenCredential.createFrom(credential.data).idToken
             val firebaseCredential = GoogleAuthProvider.getCredential(googleIdToken, null)
-            val authResult = auth.signInWithCredential(firebaseCredential).await()
+            val authResult = firebaseAuth.signInWithCredential(firebaseCredential).await()
             val user = authResult.user ?: throw IllegalStateException("Firebase user is null after sign in")
 
             Result.success(user)
@@ -93,7 +102,8 @@ class FirebaseAuthManager(private val context: Context) {
     }
 
     fun signOut() {
-        auth.signOut()
+        runCatching { auth?.signOut() }
+        _currentUser.value = null
         ioScope.launch {
             try {
                 CredentialManager.create(context)

@@ -103,16 +103,16 @@ fun DrawScope.drawPharaonicCosmicBackdrop(
 
     // 5. Left & right carved Pharaonic hieroglyphic stone pilasters
     if (includeHieroglyphicPilasters && size.width > 0f && size.height > 0f) {
-        val marginOuter = size.width * 0.02f
+        val marginOuter = size.width * 0.018f
         val columnWidth = (size.width * 0.088f).coerceIn(26f, 48f)
-        val baseGlyphColor = Color(0xFFA282E6).copy(alpha = 0.14f)
-        val goldGlyphColor = GoldAccent.copy(alpha = 0.12f)
+        val baseGlyphColor = Color(0xFFB5925B).copy(alpha = 0.16f)
+        val goldGlyphColor = GoldAccent.copy(alpha = 0.19f)
         val glyphStroke = Stroke(width = 1.6f)
 
         listOf(marginOuter, size.width - marginOuter - columnWidth).forEach { colX ->
             // Pilaster stone fill wash
             drawRect(
-                color = Color(0xFF281447).copy(alpha = 0.22f),
+                color = Color(0xFF23133D).copy(alpha = 0.24f),
                 topLeft = Offset(colX, size.height * 0.04f),
                 size = Size(columnWidth, size.height * 0.92f)
             )
@@ -302,18 +302,14 @@ fun LiquidGlassBackground(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color(0xFF150829), CosmicBg, CosmicDark, Color(0xFF120722))
-                )
-            )
-            .drawBehind {
-                drawPharaonicCosmicBackdrop(
-                    includeHieroglyphicPilasters = true,
-                    includeGoldTopAura = false
-                )
-            }
+            .background(Color(0xFF1A0938))
     ) {
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.alpha_go_cosmic_bg),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+        )
         content()
     }
 }

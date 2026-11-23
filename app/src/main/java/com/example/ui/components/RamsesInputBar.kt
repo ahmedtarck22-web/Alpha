@@ -31,12 +31,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.outlined.CenterFocusWeak
+import androidx.compose.material.icons.outlined.Mic
+import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -63,6 +63,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -71,8 +72,6 @@ import com.example.data.model.AppLanguage
 import com.example.ui.theme.CairoFontFamily
 import com.example.ui.theme.CosmicBg
 import com.example.ui.theme.CosmicCard
-import com.example.ui.theme.CosmicDark
-import com.example.ui.theme.CosmicLight
 import com.example.ui.theme.EgyptianCyan
 import com.example.ui.theme.GoldAccent
 import com.example.ui.theme.GoldBorder
@@ -104,14 +103,14 @@ fun RamsesInputBar(
     val isAr = appLanguage == AppLanguage.ARABIC
     var showPlusMenu by remember { mutableStateOf(false) }
 
-    // Keep exact LTR bar arrangement from IMG_1050:
+    // Exact LTR capsule arrangement from IMG_1050:
     // Left: [Floating card & (+)] | Center: [اكتب هنا...] | Right: [🎤] [📞]
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Column(
             modifier = modifier
                 .fillMaxWidth()
                 .imePadding()
-                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .padding(horizontal = 12.dp, vertical = 4.dp)
         ) {
             // Luminous Frosted Plus Menu matching IMG_1050
             AnimatedVisibility(
@@ -121,19 +120,19 @@ fun RamsesInputBar(
             ) {
                 Surface(
                     modifier = Modifier
-                        .padding(bottom = 10.dp)
-                        .widthIn(min = 185.dp, max = 230.dp)
-                        .shadow(18.dp, RoundedCornerShape(18.dp), ambientColor = GoldGlow, spotColor = GoldAccent)
+                        .padding(bottom = 6.dp)
+                        .widthIn(min = 186.dp, max = 224.dp)
+                        .shadow(20.dp, RoundedCornerShape(16.dp), ambientColor = GoldGlow, spotColor = GoldAccent)
                         .testTag("plus_popup_menu"),
-                    shape = RoundedCornerShape(18.dp),
-                    color = CosmicCard.copy(alpha = 0.94f),
-                    border = BorderStroke(1.2.dp, GoldBorder)
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xF22D1C4D),
+                    border = BorderStroke(1.2.dp, GoldGlow.copy(alpha = 0.78f))
                 ) {
-                    Column(modifier = Modifier.padding(6.dp)) {
+                    Column(modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 46.dp)
+                                .heightIn(min = 48.dp)
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable {
                                     showPlusMenu = false
@@ -147,14 +146,14 @@ fun RamsesInputBar(
                             Text(
                                 text = if (isAr) "تحليل الصور" else "Image Analysis",
                                 fontFamily = CairoFontFamily,
-                                fontSize = 13.sp,
+                                fontSize = 13.5.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = TextPrimary
+                                color = Color(0xFFF5EFFC)
                             )
                             Icon(
-                                imageVector = Icons.Default.CameraAlt,
+                                imageVector = Icons.Outlined.CenterFocusWeak,
                                 contentDescription = null,
-                                tint = GoldGlow,
+                                tint = Color(0xFFEBD2A0),
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -162,16 +161,16 @@ fun RamsesInputBar(
                         HorizontalDivider(
                             thickness = 0.8.dp,
                             color = GoldBorderSubtle,
-                            modifier = Modifier.padding(vertical = 2.dp)
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
                         )
 
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 46.dp)
+                                .heightIn(min = 48.dp)
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(
-                                    if (isSearchGroundingEnabled) GoldAccent.copy(alpha = 0.14f) else Color.Transparent
+                                    if (isSearchGroundingEnabled) GoldAccent.copy(alpha = 0.16f) else Color.Transparent
                                 )
                                 .clickable {
                                     showPlusMenu = false
@@ -185,14 +184,14 @@ fun RamsesInputBar(
                             Text(
                                 text = if (isAr) "البحث العميق" else "Deep Book Search",
                                 fontFamily = CairoFontFamily,
-                                fontSize = 13.sp,
+                                fontSize = 13.5.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = if (isSearchGroundingEnabled) GoldGlow else TextPrimary
+                                color = if (isSearchGroundingEnabled) GoldGlow else Color(0xFFF5EFFC)
                             )
                             Icon(
                                 imageVector = Icons.Default.Search,
                                 contentDescription = null,
-                                tint = if (isSearchGroundingEnabled) GoldGlow else GoldAccent,
+                                tint = if (isSearchGroundingEnabled) GoldGlow else Color(0xFFEBD2A0),
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -212,7 +211,7 @@ fun RamsesInputBar(
                 if (validPreviewBitmap != null) {
                     Box(
                         modifier = Modifier
-                            .padding(bottom = 8.dp)
+                            .padding(bottom = 6.dp)
                             .clip(RoundedCornerShape(16.dp))
                             .background(CosmicCard.copy(alpha = 0.92f))
                             .border(1.dp, GoldBorder, RoundedCornerShape(16.dp))
@@ -223,7 +222,7 @@ fun RamsesInputBar(
                                 bitmap = validPreviewBitmap.asImageBitmap(),
                                 contentDescription = if (isAr) "الصورة المختارة للتحليل" else "Selected image",
                                 modifier = Modifier
-                                    .size(48.dp)
+                                    .size(44.dp)
                                     .clip(RoundedCornerShape(10.dp)),
                                 contentScale = ContentScale.Crop
                             )
@@ -260,57 +259,58 @@ fun RamsesInputBar(
                 }
             }
 
-            // Unified Cosmic Purple & Gold Capsule matching IMG_1050
+            // Sleek Slim Cosmic Purple & Gold Capsule
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .shadow(18.dp, RoundedCornerShape(32.dp), ambientColor = GoldGlow.copy(alpha = 0.45f), spotColor = GoldAccent.copy(alpha = 0.5f)),
-                shape = RoundedCornerShape(32.dp),
-                color = CosmicCard.copy(alpha = 0.88f),
+                    .shadow(16.dp, RoundedCornerShape(28.dp), ambientColor = GoldGlow.copy(alpha = 0.38f), spotColor = GoldAccent.copy(alpha = 0.45f)),
+                shape = RoundedCornerShape(28.dp),
+                color = Color(0xDB241242),
                 border = BorderStroke(
-                    width = 1.2.dp,
-                    color = if (isListeningVoiceTyping) EgyptianCyan else GoldBorder
+                    width = 1.1.dp,
+                    color = if (isListeningVoiceTyping) EgyptianCyan else Color(0x99DFB054)
                 )
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                        .padding(horizontal = 6.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    // Glowing Golden (+) Button
-                    IconButton(
-                        onClick = { showPlusMenu = !showPlusMenu },
+                    // Slim Glowing Golden (+) Button
+                    Box(
                         modifier = Modifier
-                            .size(44.dp)
-                            .shadow(14.dp, CircleShape, ambientColor = GoldGlow, spotColor = GoldAccent)
+                            .size(38.dp)
+                            .shadow(12.dp, CircleShape, ambientColor = GoldGlow, spotColor = GoldAccent)
                             .clip(CircleShape)
                             .background(
                                 Brush.radialGradient(
-                                    colors = listOf(GoldAccent.copy(alpha = 0.36f), CosmicLight)
+                                    colors = listOf(GoldAccent.copy(alpha = 0.34f), Color(0xFF2D1852))
                                 )
                             )
-                            .border(1.3.dp, GoldGlow.copy(alpha = 0.85f), CircleShape)
-                            .testTag("attach_button")
+                            .border(1.3.dp, GoldGlow.copy(alpha = 0.88f), CircleShape)
+                            .clickable { showPlusMenu = !showPlusMenu }
+                            .testTag("attach_button"),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = if (showPlusMenu) Icons.Default.Close else Icons.Default.Add,
                             contentDescription = if (isAr) "خيارات التحليل والبحث" else "Analysis & Search Options",
                             tint = GoldGlow,
-                            modifier = Modifier.size(21.dp)
+                            modifier = Modifier.size(19.dp)
                         )
                     }
 
-                    // Recessed Dark Purple Input Pill
+                    // Slim Recessed Purple Input Pill
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .heightIn(min = 42.dp)
-                            .clip(RoundedCornerShape(22.dp))
-                            .background(CosmicDark.copy(alpha = 0.68f))
-                            .border(1.dp, GoldBorderSubtle, RoundedCornerShape(22.dp))
-                            .padding(horizontal = 14.dp, vertical = 9.dp),
+                            .heightIn(min = 34.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color(0xCC180B30))
+                            .border(0.9.dp, Color(0x45A88848), RoundedCornerShape(20.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
                         contentAlignment = if (isAr) Alignment.CenterEnd else Alignment.CenterStart
                     ) {
                         if (inputText.isEmpty()) {
@@ -322,7 +322,8 @@ fun RamsesInputBar(
                                 },
                                 fontFamily = CairoFontFamily,
                                 fontSize = 13.sp,
-                                color = if (isListeningVoiceTyping) EgyptianCyan else TextTertiary
+                                color = if (isListeningVoiceTyping) EgyptianCyan else TextTertiary,
+                                textAlign = if (isAr) TextAlign.End else TextAlign.Start
                             )
                         }
 
@@ -334,14 +335,15 @@ fun RamsesInputBar(
                                 .testTag("chat_input_field"),
                             textStyle = TextStyle(
                                 fontFamily = CairoFontFamily,
-                                fontSize = 14.sp,
+                                fontSize = 13.5.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = TextPrimary,
+                                textAlign = if (isAr) TextAlign.End else TextAlign.Start,
                                 textDirection = if (isAr) TextDirection.Rtl else TextDirection.Ltr
                             ),
                             cursorBrush = SolidColor(GoldGlow),
                             singleLine = false,
-                            maxLines = 4,
+                            maxLines = 3,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                             keyboardActions = KeyboardActions(
                                 onSend = {
@@ -357,68 +359,71 @@ fun RamsesInputBar(
 
                     // Dynamic Send Button (appears when user types or attaches image)
                     if (inputText.isNotBlank() || selectedImageBitmap != null) {
-                        IconButton(
-                            onClick = {
-                                onSendMessage(inputText)
-                                focusManager.clearFocus()
-                                showPlusMenu = false
-                            },
+                        Box(
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(36.dp)
                                 .clip(CircleShape)
                                 .background(GoldAccent)
-                                .testTag("send_button")
+                                .clickable {
+                                    onSendMessage(inputText)
+                                    focusManager.clearFocus()
+                                    showPlusMenu = false
+                                }
+                                .testTag("send_button"),
+                            contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Send,
                                 contentDescription = if (isAr) "إرسال" else "Send",
                                 tint = CosmicBg,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(17.dp)
                             )
                         }
                     }
 
-                    // Dark Purple Mic Medallion with Gold Rim & Icon
-                    IconButton(
-                        onClick = onMicVoiceTypingClick,
+                    // Slim Purple Mic Medallion
+                    Box(
                         modifier = Modifier
-                            .size(42.dp)
+                            .size(36.dp)
                             .clip(CircleShape)
-                            .background(CosmicLight.copy(alpha = 0.65f))
+                            .background(Color(0xFF281548))
                             .border(1.dp, GoldBorder, CircleShape)
-                            .testTag("mic_button")
+                            .clickable { onMicVoiceTypingClick() }
+                            .testTag("mic_button"),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = if (isListeningVoiceTyping) Icons.Default.Stop else Icons.Default.Mic,
+                            imageVector = if (isListeningVoiceTyping) Icons.Default.Stop else Icons.Outlined.Mic,
                             contentDescription = if (isAr) "تسجيل رسالة صوتية" else "Voice input",
                             tint = if (isListeningVoiceTyping) RoseError else GoldGlow,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
 
-                    // Dark Purple Live Call Medallion with Gold Rim & Icon matching IMG_1050
-                    IconButton(
-                        onClick = {
-                            showPlusMenu = false
-                            onGeminiLiveClick()
-                        },
+                    // Slim Purple Live Call Medallion
+                    Box(
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(38.dp)
                             .shadow(10.dp, CircleShape, ambientColor = GoldAccent, spotColor = GoldAccent)
                             .clip(CircleShape)
                             .background(
                                 Brush.radialGradient(
-                                    colors = listOf(GoldAccent.copy(alpha = 0.20f), CosmicLight)
+                                    colors = listOf(GoldAccent.copy(alpha = 0.22f), Color(0xFF281548))
                                 )
                             )
-                            .border(1.2.dp, GoldAccent.copy(alpha = 0.8f), CircleShape)
-                            .testTag("gemini_live_call_button")
+                            .border(1.1.dp, GoldAccent.copy(alpha = 0.82f), CircleShape)
+                            .clickable {
+                                showPlusMenu = false
+                                onGeminiLiveClick()
+                            }
+                            .testTag("gemini_live_call_button"),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Phone,
+                            imageVector = Icons.Outlined.Phone,
                             contentDescription = if (isAr) "مكالمة صوتية مباشرة" else "Live Voice Call",
                             tint = GoldGlow,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }

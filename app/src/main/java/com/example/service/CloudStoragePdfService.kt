@@ -62,7 +62,9 @@ class FirebaseCloudStorageGateway : CloudStorageGateway {
         onProgress: (Float) -> Unit
     ): String {
         val cleanBucket = bucketName.removePrefix("gs://").trimEnd('/')
-        val storage = FirebaseStorage.getInstance("gs://$cleanBucket")
+        val storage = runCatching { FirebaseStorage.getInstance("gs://$cleanBucket") }.getOrElse { err ->
+            throw IllegalStateException("خدمة Firebase Storage غير مهيّأة (ملف google-services.json مفقود).", err)
+        }
         val targetRef = storage.reference.child(storagePath.trimStart('/'))
 
         val metadataBuilder = StorageMetadata.Builder()
@@ -102,8 +104,13 @@ class FirebaseCloudStorageGateway : CloudStorageGateway {
         customMetadata: Map<String, String>,
         onProgress: (Float) -> Unit
     ): String {
+        if (!com.example.firebase.ensureFirebaseInitialized(context)) {
+            throw IllegalStateException("خدمة Firebase Storage غير مهيّأة (ملف google-services.json مفقود).")
+        }
         val cleanBucket = bucketName.removePrefix("gs://").trimEnd('/')
-        val storage = FirebaseStorage.getInstance("gs://$cleanBucket")
+        val storage = runCatching { FirebaseStorage.getInstance("gs://$cleanBucket") }.getOrElse { err ->
+            throw IllegalStateException("خدمة Firebase Storage غير مهيّأة (ملف google-services.json مفقود).", err)
+        }
         val targetRef = storage.reference.child(storagePath.trimStart('/'))
 
         val metadataBuilder = StorageMetadata.Builder()
@@ -227,6 +234,9 @@ class CloudStoragePdfService(
             }
         }
 
+        if (!com.example.firebase.ensureFirebaseInitialized(context)) {
+            throw IllegalStateException("خدمة Firebase Storage غير مهيّأة (ملف google-services.json مفقود).")
+        }
         val bucket = config.normalizedBucketName()
         val folder = config.gcsFolder.trim('/')
         val results = mutableListOf<UploadedPdfPayload>()

@@ -28,7 +28,7 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 class FirestoreRagRepository(
-    private val db: FirebaseFirestore,
+    private val db: FirebaseFirestore?,
     private val appContext: Context? = null,
     private val authProvider: () -> String? = {
         runCatching { FirebaseAuth.getInstance().currentUser?.uid }.getOrNull()
@@ -50,12 +50,14 @@ class FirestoreRagRepository(
             "book_greco_roman_arch_05"
         )
 
-        private fun resolveDefaultFirestore(context: Context): FirebaseFirestore {
+        private fun resolveDefaultFirestore(context: Context): FirebaseFirestore? {
             val appCtx = context.applicationContext ?: context
-            com.example.firebase.ensureFirebaseInitialized(appCtx)
-            return FirebaseFirestore.getInstance(
-                appCtx.getString(R.string.firestore_database_id)
-            )
+            if (!com.example.firebase.ensureFirebaseInitialized(appCtx)) return null
+            return runCatching {
+                FirebaseFirestore.getInstance(
+                    appCtx.getString(R.string.firestore_database_id)
+                )
+            }.getOrNull()
         }
 
         private const val MAX_FOLDER_BATCH_OPS = 15
@@ -226,8 +228,9 @@ class FirestoreRagRepository(
      * Real-time stream of shared Cloud Firebase books (`/rag_books` where `isShared == true`),
      * excluding legacy seed book IDs so only user-uploaded books appear.
      */
-    fun observeSharedBooks(): Flow<List<CloudRagBook>> =
-        db.collection("rag_books")
+    fun observeSharedBooks(): Flow<List<CloudRagBook>> {
+        val firestore = db ?: return flowOf(emptyList())
+        return firestore.collection("rag_books")
             .whereEqualTo("isShared", true)
             .snapshots()
             .map { snapshot ->
@@ -235,6 +238,7 @@ class FirestoreRagRepository(
                     .map { CloudRagBook.fromSnapshot(it) }
                     .filter { it.bookId !in LEGACY_SEED_BOOK_IDS }
             }
+    }
 
     /**
      * Real-time stream of book-scoped shared small folders (`/rag_folders` where `isShared == true`
@@ -248,11 +252,12 @@ class FirestoreRagRepository(
                 .map { it.bookId }
                 .filter { it.isNotBlank() }
                 .distinct()
-            if (sharedBookIds.isEmpty()) {
+            val firestore = db
+            if (sharedBookIds.isEmpty() || firestore == null) {
                 flowOf(emptyList())
             } else {
                 val sliceFlows = sharedBookIds.chunked(MAX_BOOK_IN_QUERY_SIZE).map { slice ->
-                    db.collection("rag_folders")
+                    firestore.collection("rag_folders")
                         .whereEqualTo("isShared", true)
                         .whereIn("bookId", slice)
                         .snapshots()
@@ -279,9 +284,10 @@ class FirestoreRagRepository(
      * Real-time stream of all Cloud RAG books accessible to the current user (owned private + shared).
      */
     fun observeAccessibleBooks(): Flow<List<CloudRagBook>> {
+        val firestore = db ?: return flowOf(emptyList())
         val uid = authProvider()
         if (uid.isNullOrBlank()) return observeSharedBooks()
-        val ownedFlow = db.collection("rag_books")
+        val ownedFlow = firestore.collection("rag_books")
             .whereEqualTo("ownerId", uid)
             .snapshots()
             .map { snapshot ->
@@ -298,9 +304,10 @@ class FirestoreRagRepository(
      * Real-time stream of all Cloud RAG folders accessible to the current user (owned private + shared).
      */
     fun observeAccessibleFolders(): Flow<List<CloudRagFolder>> {
+        val firestore = db ?: return flowOf(emptyList())
         val uid = authProvider()
         if (uid.isNullOrBlank()) return observeSharedFolders()
-        val ownedFlow = db.collection("rag_folders")
+        val ownedFlow = firestore.collection("rag_folders")
             .whereEqualTo("ownerId", uid)
             .snapshots()
             .map { snapshot ->
@@ -314,8 +321,9 @@ class FirestoreRagRepository(
     }
 
     suspend fun getSharedBooks(): Result<List<CloudRagBook>> {
+        val firestore = db ?: return Result.success(emptyList())
         return try {
-            val sharedSnap = db.collection("rag_books")
+            val sharedSnap = firestore.collection("rag_books")
                 .whereEqualTo("isShared", true)
                 .get()
                 .await()
@@ -325,7 +333,7 @@ class FirestoreRagRepository(
             val uid = authProvider()
             val ownedList = if (!uid.isNullOrBlank()) {
                 try {
-                    db.collection("rag_books")
+                    firestore.collection("rag_books")
                         .whereEqualTo("ownerId", uid)
                         .get()
                         .await()
@@ -348,12 +356,13 @@ class FirestoreRagRepository(
     }
 
     suspend fun getSharedFolders(): Result<List<CloudRagFolder>> {
+        val firestore = db ?: return Result.success(emptyList())
         return try {
             val accessibleBooks = getSharedBooks().getOrThrow()
             val uid = authProvider()
             val ownedList = if (!uid.isNullOrBlank()) {
                 try {
-                    db.collection("rag_folders")
+                    firestore.collection("rag_folders")
                         .whereEqualTo("ownerId", uid)
                         .get()
                         .await()
@@ -375,7 +384,7 @@ class FirestoreRagRepository(
             val sharedOtherList = mutableListOf<CloudRagFolder>()
             for (slice in otherSharedBookIds.chunked(MAX_BOOK_IN_QUERY_SIZE)) {
                 try {
-                    val snap = db.collection("rag_folders")
+                    val snap = firestore.collection("rag_folders")
                         .whereEqualTo("isShared", true)
                         .whereIn("bookId", slice)
                         .get()
@@ -386,7 +395,7 @@ class FirestoreRagRepository(
                         // A book in this slice was concurrently revoked; query remaining books individually
                         for (bid in slice) {
                             try {
-                                val singleSnap = db.collection("rag_folders")
+                                val singleSnap = firestore.collection("rag_folders")
                                     .whereEqualTo("isShared", true)
                                     .whereEqualTo("bookId", bid)
                                     .get()
@@ -412,8 +421,9 @@ class FirestoreRagRepository(
     }
 
     suspend fun getBookById(bookId: String): Result<CloudRagBook?> {
+        val firestore = db ?: return Result.success(null)
         return try {
-            val snap = db.collection("rag_books").document(bookId).get().await()
+            val snap = firestore.collection("rag_books").document(bookId).get().await()
             Result.success(if (snap.exists()) CloudRagBook.fromSnapshot(snap) else null)
         } catch (e: CancellationException) {
             throw e
@@ -424,11 +434,12 @@ class FirestoreRagRepository(
     }
 
     suspend fun getChunksForFolder(folderId: String): Result<List<CloudRagChunk>> {
+        val firestore = db ?: return Result.success(emptyList())
         return try {
             val uid = authProvider()
             if (uid.isNullOrBlank()) {
                 // Unauthenticated callers must hit Firestore rules directly and fail with PERMISSION_DENIED
-                val unauthSnap = db.collection("rag_chunks")
+                val unauthSnap = firestore.collection("rag_chunks")
                     .whereEqualTo("isShared", true)
                     .whereEqualTo("folderId", folderId)
                     .get()
@@ -440,7 +451,7 @@ class FirestoreRagRepository(
 
             // 1. Query owner's chunks first (0 rule get() lookups; succeeds for both shared and private owner folders)
             val ownedChunks = try {
-                db.collection("rag_chunks")
+                firestore.collection("rag_chunks")
                     .whereEqualTo("ownerId", uid)
                     .whereEqualTo("folderId", folderId)
                     .get()
@@ -456,7 +467,7 @@ class FirestoreRagRepository(
 
             // 2. Otherwise query shared chunks for non-owned folder (rules enforce parent folder & parent book isShared == true)
             val rawSharedChunks = try {
-                db.collection("rag_chunks")
+                firestore.collection("rag_chunks")
                     .whereEqualTo("isShared", true)
                     .whereEqualTo("folderId", folderId)
                     .get()
@@ -501,6 +512,9 @@ class FirestoreRagRepository(
      */
     suspend fun uploadBookBundle(bundle: SeedRagBookBundle): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            val firestore = db ?: return@withContext Result.failure(
+                IllegalStateException("خدمة Firebase غير مفعلة حالياً (google-services.json غير موجود).")
+            )
             val uid = requireAuthenticatedUid()
             val normalizedShared = bundle.book.isShared
             val bookPayload = bundle.book.copy(isShared = normalizedShared).toCreateMap(uid)
@@ -520,17 +534,17 @@ class FirestoreRagRepository(
             // Stage 1: Commit parent book + first slice of folders (<= 15 getAfter calls per batch)
             val folderSlices = folderEntries.chunked(MAX_FOLDER_BATCH_OPS)
             if (folderSlices.isEmpty()) {
-                val bookBatch = db.batch()
-                bookBatch.set(db.collection("rag_books").document(bundle.book.bookId), bookPayload)
+                val bookBatch = firestore.batch()
+                bookBatch.set(firestore.collection("rag_books").document(bundle.book.bookId), bookPayload)
                 bookBatch.commit().await()
             } else {
                 for ((idx, slice) in folderSlices.withIndex()) {
-                    val batch = db.batch()
+                    val batch = firestore.batch()
                     if (idx == 0) {
-                        batch.set(db.collection("rag_books").document(bundle.book.bookId), bookPayload)
+                        batch.set(firestore.collection("rag_books").document(bundle.book.bookId), bookPayload)
                     }
                     for ((docId, payload) in slice) {
-                        batch.set(db.collection("rag_folders").document(docId), payload)
+                        batch.set(firestore.collection("rag_folders").document(docId), payload)
                     }
                     batch.commit().await()
                 }
@@ -538,9 +552,9 @@ class FirestoreRagRepository(
 
             // Stage 2: Commit chunks in slices of <= 9 (2 getAfter calls/chunk = <= 18 calls/batch)
             for (slice in chunkEntries.chunked(MAX_CHUNK_BATCH_OPS)) {
-                val batch = db.batch()
+                val batch = firestore.batch()
                 for ((docId, payload) in slice) {
-                    batch.set(db.collection("rag_chunks").document(docId), payload)
+                    batch.set(firestore.collection("rag_chunks").document(docId), payload)
                 }
                 batch.commit().await()
             }
@@ -559,8 +573,11 @@ class FirestoreRagRepository(
      */
     suspend fun setBookShared(bookId: String, isShared: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            val firestore = db ?: return@withContext Result.failure(
+                IllegalStateException("خدمة Firebase غير مفعلة حالياً (google-services.json غير موجود).")
+            )
             val uid = requireAuthenticatedUid()
-            val bookRef = db.collection("rag_books").document(bookId)
+            val bookRef = firestore.collection("rag_books").document(bookId)
             val bookSnap = bookRef.get().await()
             if (!bookSnap.exists()) {
                 return@withContext Result.failure(NoSuchElementException("Book '$bookId' does not exist."))
@@ -570,7 +587,7 @@ class FirestoreRagRepository(
                 return@withContext Result.failure(SecurityException("Only the book owner can change sharing permissions."))
             }
 
-            val folderRefs = db.collection("rag_folders")
+            val folderRefs = firestore.collection("rag_folders")
                 .whereEqualTo("ownerId", uid)
                 .whereEqualTo("bookId", bookId)
                 .get()
@@ -578,7 +595,7 @@ class FirestoreRagRepository(
                 .documents
                 .map { it.reference }
 
-            val chunkRefs = db.collection("rag_chunks")
+            val chunkRefs = firestore.collection("rag_chunks")
                 .whereEqualTo("ownerId", uid)
                 .whereEqualTo("bookId", bookId)
                 .get()
@@ -594,12 +611,12 @@ class FirestoreRagRepository(
             // Update book + folders first so getAfter(book) & getAfter(folder) match incoming isShared
             val folderSlices = folderRefs.chunked(MAX_FOLDER_BATCH_OPS)
             if (folderSlices.isEmpty()) {
-                val batch = db.batch()
+                val batch = firestore.batch()
                 batch.update(bookRef, updatePayload)
                 batch.commit().await()
             } else {
                 for ((idx, slice) in folderSlices.withIndex()) {
-                    val batch = db.batch()
+                    val batch = firestore.batch()
                     if (idx == 0) {
                         batch.update(bookRef, updatePayload)
                     }
@@ -611,7 +628,7 @@ class FirestoreRagRepository(
             }
 
             for (slice in chunkRefs.chunked(MAX_CHUNK_BATCH_OPS)) {
-                val batch = db.batch()
+                val batch = firestore.batch()
                 for (ref in slice) {
                     batch.update(ref, updatePayload)
                 }
@@ -632,8 +649,11 @@ class FirestoreRagRepository(
      */
     suspend fun deleteBookBundle(bookId: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            val firestore = db ?: return@withContext Result.failure(
+                IllegalStateException("خدمة Firebase غير مفعلة حالياً (google-services.json غير موجود).")
+            )
             val uid = requireAuthenticatedUid()
-            val bookRef = db.collection("rag_books").document(bookId)
+            val bookRef = firestore.collection("rag_books").document(bookId)
             val bookSnap = bookRef.get().await()
             if (!bookSnap.exists()) {
                 return@withContext Result.success(Unit)
@@ -642,7 +662,7 @@ class FirestoreRagRepository(
                 return@withContext Result.failure(SecurityException("Only the book owner can delete this book."))
             }
 
-            val chunkRefs = db.collection("rag_chunks")
+            val chunkRefs = firestore.collection("rag_chunks")
                 .whereEqualTo("ownerId", uid)
                 .whereEqualTo("bookId", bookId)
                 .get()
@@ -650,7 +670,7 @@ class FirestoreRagRepository(
                 .documents
                 .map { it.reference }
 
-            val folderRefs = db.collection("rag_folders")
+            val folderRefs = firestore.collection("rag_folders")
                 .whereEqualTo("ownerId", uid)
                 .whereEqualTo("bookId", bookId)
                 .get()
@@ -661,7 +681,7 @@ class FirestoreRagRepository(
             // Delete leaves first (chunks -> folders -> book) so non-owners never see dangling children
             val allDeletes = chunkRefs + folderRefs + bookRef
             for (slice in allDeletes.chunked(MAX_DELETE_BATCH_OPS)) {
-                val batch = db.batch()
+                val batch = firestore.batch()
                 for (ref in slice) {
                     batch.delete(ref)
                 }
@@ -681,11 +701,12 @@ class FirestoreRagRepository(
      * from Cloud Firestore so the user starts with a clean library for their own books.
      */
     suspend fun purgeLegacyFiveSeedBooks(): Int = withContext(Dispatchers.IO) {
+        val firestore = db ?: return@withContext 0
         val uid = authProvider()?.takeIf { it.isNotBlank() } ?: return@withContext 0
         var deletedCount = 0
         try {
             val ownedLegacyIds = runCatching {
-                db.collection("rag_books")
+                firestore.collection("rag_books")
                     .whereEqualTo("ownerId", uid)
                     .get()
                     .await()
@@ -698,7 +719,7 @@ class FirestoreRagRepository(
             val candidateIds = (LEGACY_SEED_BOOK_IDS + ownedLegacyIds).distinct()
             for (seedBookId in candidateIds) {
                 val res = runCatching {
-                    val snap = db.collection("rag_books").document(seedBookId).get().await()
+                    val snap = firestore.collection("rag_books").document(seedBookId).get().await()
                     if (snap.exists() && snap.getString("ownerId") == uid) {
                         deleteBookBundle(seedBookId)
                     } else {
@@ -725,6 +746,7 @@ class FirestoreRagRepository(
         topFoldersLimit: Int = 4,
         topChunksLimit: Int = 5
     ): List<RetrievedRagPassage> = withContext(Dispatchers.IO) {
+        if (db == null) return@withContext emptyList()
         val tokens = extractSearchTokens(query)
         val queryStems = extractSearchStems(query)
         val normQuery = normalizeSearchText(query)
@@ -863,6 +885,7 @@ class FirestoreRagRepository(
         bookId: String? = null,
         limit: Int = 12
     ): List<CloudRagChunk> = withContext(Dispatchers.IO) {
+        if (db == null) return@withContext emptyList()
         val uid = authProvider()
         if (uid.isNullOrBlank()) return@withContext emptyList()
 

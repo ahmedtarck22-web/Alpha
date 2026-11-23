@@ -31,7 +31,7 @@ import java.util.Locale
 import java.util.UUID
 
 class FirestoreVideoRepository(
-    private val db: FirebaseFirestore,
+    private val db: FirebaseFirestore?,
     private val appContext: Context,
     private val storageService: CloudStoragePdfService = CloudStoragePdfService(),
     private val authProvider: () -> String? = {
@@ -47,12 +47,14 @@ class FirestoreVideoRepository(
         private const val TAG = "FirestoreVideoRepo"
         private const val MAX_VIDEO_BYTES = 524_288_000L // 500 MB matching firestore.rules
 
-        private fun resolveDefaultFirestore(context: Context): FirebaseFirestore {
+        private fun resolveDefaultFirestore(context: Context): FirebaseFirestore? {
             val appCtx = context.applicationContext ?: context
-            ensureFirebaseInitialized(appCtx)
-            return FirebaseFirestore.getInstance(
-                appCtx.getString(R.string.firestore_database_id)
-            )
+            if (!ensureFirebaseInitialized(appCtx)) return null
+            return runCatching {
+                FirebaseFirestore.getInstance(
+                    appCtx.getString(R.string.firestore_database_id)
+                )
+            }.getOrNull()
         }
     }
 
@@ -66,11 +68,12 @@ class FirestoreVideoRepository(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun observeAccessibleVideos(authUidFlow: Flow<String?>): Flow<List<CloudVideoItem>> {
+        val firestore = db ?: return flowOf(emptyList())
         return authUidFlow.flatMapLatest { uid ->
             if (uid.isNullOrBlank()) {
                 flowOf(emptyList())
             } else {
-                val ownedFlow = db.collection("videos")
+                val ownedFlow = firestore.collection("videos")
                     .whereEqualTo("ownerId", uid)
                     .snapshots()
                     .map { snap -> snap.documents.map { CloudVideoItem.fromSnapshot(it) } }
@@ -80,7 +83,7 @@ class FirestoreVideoRepository(
                         emit(emptyList())
                     }
 
-                val sharedFlow = db.collection("videos")
+                val sharedFlow = firestore.collection("videos")
                     .whereEqualTo("isShared", true)
                     .snapshots()
                     .map { snap -> snap.documents.map { CloudVideoItem.fromSnapshot(it) } }
@@ -111,6 +114,9 @@ class FirestoreVideoRepository(
         onProgress: (Float, String) -> Unit = { _, _ -> }
     ): Result<CloudVideoItem> = withContext(Dispatchers.IO) {
         try {
+            val firestore = db ?: return@withContext Result.failure(
+                IllegalStateException("خدمة Firebase غير مفعلة حالياً (google-services.json غير موجود).")
+            )
             val uid = requireAuthenticatedUid()
             val fileSize = storageService.resolveFileSizeBytes(appContext, uri)
             if (fileSize > MAX_VIDEO_BYTES) {
@@ -174,7 +180,7 @@ class FirestoreVideoRepository(
             )
 
             onProgress(0.96f, "جارٍ حفظ بيانات الفيديو في سحابة Firestore...")
-            db.collection("videos")
+            firestore.collection("videos")
                 .document(videoId)
                 .set(item.toCreateMap(uid))
                 .await()
@@ -192,11 +198,14 @@ class FirestoreVideoRepository(
 
     suspend fun deleteVideo(video: CloudVideoItem): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            val firestore = db ?: return@withContext Result.failure(
+                IllegalStateException("خدمة Firebase غير مفعلة حالياً (google-services.json غير موجود).")
+            )
             val uid = requireAuthenticatedUid()
             if (video.ownerId != uid) {
                 return@withContext Result.failure(SecurityException("فقط صاحب الفيديو يمكنه حذفه."))
             }
-            db.collection("videos").document(video.videoId).delete().await()
+            firestore.collection("videos").document(video.videoId).delete().await()
             if (video.storagePath.isNotBlank()) {
                 runCatching {
                     val bucket = FileSearchDefaults.DEFAULT_STORAGE_BUCKET.removePrefix("gs://").trimEnd('/')

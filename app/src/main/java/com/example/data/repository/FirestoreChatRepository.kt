@@ -15,7 +15,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.tasks.await
 
 class FirestoreChatRepository(
-    private val db: FirebaseFirestore
+    private val db: FirebaseFirestore?
 ) {
     companion object {
         private const val TAG = "FirestoreChatRepo"
@@ -26,18 +26,24 @@ class FirestoreChatRepository(
         fun getInstance(context: Context): FirestoreChatRepository {
             return instance ?: synchronized(this) {
                 val appCtx = context.applicationContext ?: context
-                com.example.firebase.ensureFirebaseInitialized(appCtx)
-                val dbId = appCtx.getString(R.string.firestore_database_id)
-                val firestore = FirebaseFirestore.getInstance(dbId)
+                val firestore = if (com.example.firebase.ensureFirebaseInitialized(appCtx)) {
+                    runCatching {
+                        val dbId = appCtx.getString(R.string.firestore_database_id)
+                        FirebaseFirestore.getInstance(dbId)
+                    }.getOrNull()
+                } else {
+                    null
+                }
                 instance ?: FirestoreChatRepository(firestore).also { instance = it }
             }
         }
     }
 
     suspend fun syncUserProfile(user: FirebaseUser) {
+        val firestore = db ?: return
         val path = "users/${user.uid}"
         try {
-            val userDoc = db.collection("users").document(user.uid)
+            val userDoc = firestore.collection("users").document(user.uid)
             val existingSnap = userDoc.get().await()
             val data = mutableMapOf<String, Any>(
                 "uid" to user.uid,
@@ -60,9 +66,10 @@ class FirestoreChatRepository(
     }
 
     suspend fun saveSession(session: ChatSession, userId: String) {
+        val firestore = db ?: return
         val path = "users/$userId/sessions/${session.id}"
         try {
-            val sessionDoc = db.collection("users").document(userId)
+            val sessionDoc = firestore.collection("users").document(userId)
                 .collection("sessions").document(session.id)
 
             val existingSnap = sessionDoc.get().await()
@@ -90,9 +97,10 @@ class FirestoreChatRepository(
      * Safe even if the user signed in mid-session before the session document existed in Firestore.
      */
     suspend fun upsertSessionMetadata(sessionId: String, title: String, userId: String) {
+        val firestore = db ?: return
         val path = "users/$userId/sessions/$sessionId"
         try {
-            val sessionDoc = db.collection("users").document(userId)
+            val sessionDoc = firestore.collection("users").document(userId)
                 .collection("sessions").document(sessionId)
 
             val existingSnap = sessionDoc.get().await()
@@ -118,15 +126,16 @@ class FirestoreChatRepository(
     }
 
     suspend fun deleteSession(sessionId: String, userId: String) {
+        val firestore = db ?: return
         val path = "users/$userId/sessions/$sessionId"
         try {
-            val sessionDoc = db.collection("users").document(userId)
+            val sessionDoc = firestore.collection("users").document(userId)
                 .collection("sessions").document(sessionId)
 
             // Delete subcollection messages first so no orphaned message documents remain
             val messagesSnap = sessionDoc.collection("messages").get().await()
             for (slice in messagesSnap.documents.chunked(400)) {
-                val batch = db.batch()
+                val batch = firestore.batch()
                 slice.forEach { batch.delete(it.reference) }
                 batch.commit().await()
             }
@@ -141,9 +150,10 @@ class FirestoreChatRepository(
     }
 
     suspend fun clearAllSessions(userId: String) {
+        val firestore = db ?: return
         val path = "users/$userId/sessions"
         try {
-            val sessionsSnap = db.collection("users").document(userId)
+            val sessionsSnap = firestore.collection("users").document(userId)
                 .collection("sessions")
                 .get()
                 .await()
@@ -158,9 +168,10 @@ class FirestoreChatRepository(
     }
 
     suspend fun deleteMessage(sessionId: String, messageId: String, userId: String) {
+        val firestore = db ?: return
         val path = "users/$userId/sessions/$sessionId/messages/$messageId"
         try {
-            db.collection("users").document(userId)
+            firestore.collection("users").document(userId)
                 .collection("sessions").document(sessionId)
                 .collection("messages").document(messageId)
                 .delete()
@@ -173,9 +184,10 @@ class FirestoreChatRepository(
     }
 
     suspend fun saveMessage(message: ChatMessageEntity, userId: String) {
+        val firestore = db ?: return
         val path = "users/$userId/sessions/${message.sessionId}/messages/${message.id}"
         try {
-            val messageDoc = db.collection("users").document(userId)
+            val messageDoc = firestore.collection("users").document(userId)
                 .collection("sessions").document(message.sessionId)
                 .collection("messages").document(message.id)
 

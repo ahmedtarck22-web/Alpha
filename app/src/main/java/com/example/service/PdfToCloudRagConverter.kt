@@ -83,6 +83,11 @@ class PdfToCloudRagConverter(
         onProgress: (String, Int, Int) -> Unit
     ): Result<Int> = withContext(Dispatchers.IO) {
         if (uris.isEmpty()) return@withContext Result.success(0)
+        if (!com.example.firebase.ensureFirebaseInitialized(appContext)) {
+            return@withContext Result.failure(
+                IllegalStateException("خدمة Firebase AI غير مفعّلة حالياً (ملف google-services.json مفقود).")
+            )
+        }
         var convertedCount = 0
         try {
             for ((bookIdx, uri) in uris.withIndex()) {
@@ -312,7 +317,11 @@ class PdfToCloudRagConverter(
                 throw IllegalStateException("لم يتم استخراج محتوى نصي من ملف الـ PDF.")
             }
 
-            val uid = runCatching { FirebaseAuth.getInstance().currentUser?.uid }.getOrNull().orEmpty()
+            val uid = if (com.example.firebase.ensureFirebaseInitialized(appContext)) {
+                runCatching { FirebaseAuth.getInstance().currentUser?.uid }.getOrNull().orEmpty()
+            } else {
+                ""
+            }
             var uploadedPdfUrl = ""
             var uploadedStoragePath = ""
             if (uid.isNotBlank() && tempPdf.exists()) {

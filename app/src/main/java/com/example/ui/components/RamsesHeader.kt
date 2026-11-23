@@ -16,13 +16,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -42,7 +40,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,8 +50,6 @@ import com.example.data.model.UserProfile
 import com.example.ui.theme.CairoFontFamily
 import com.example.ui.theme.CinzelFontFamily
 import com.example.ui.theme.CosmicBg
-import com.example.ui.theme.CosmicCard
-import com.example.ui.theme.CosmicLight
 import com.example.ui.theme.EmeraldSuccess
 import com.example.ui.theme.GoldAccent
 import com.example.ui.theme.GoldBorder
@@ -89,9 +84,9 @@ fun RamsesHeader(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF543C16),
-                        Color(0xFF312021),
-                        CosmicBg.copy(alpha = 0.96f)
+                        Color(0x993D2824),
+                        Color(0x7025123D),
+                        Color.Transparent
                     )
                 )
             )
@@ -99,29 +94,30 @@ fun RamsesHeader(
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            GoldAccent.copy(alpha = 0.28f),
+                            GoldAccent.copy(alpha = 0.22f),
                             Color.Transparent
                         ),
-                        center = Offset(size.width * 0.5f, size.height * 0.24f),
-                        radius = size.width * 0.45f
+                        center = Offset(size.width * 0.5f, size.height * 0.34f),
+                        radius = size.width * 0.38f
                     ),
-                    center = Offset(size.width * 0.5f, size.height * 0.24f),
-                    radius = size.width * 0.45f
+                    center = Offset(size.width * 0.5f, size.height * 0.34f),
+                    radius = size.width * 0.38f
                 )
             }
     ) {
-        // Fixed visual horizontal placement matching reference screenshot:
-        // Left: [Menu Circle] [عربي / EN Pill]  |  Center: [Alpha Go]  |  Right: [تسجيل الدخول Pill]
+        // Left: [Control Center ≡ Circle] [عربي / EN Pill]
+        // Center: [Main App Icon (alpha_go_logo) + Alpha Go]
+        // Right: [Circular Person Sign-In Button]
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left Cluster: Hamburger Circle + Language Pill
+                // Left Cluster: Control Center Hamburger Circle + Language Pill
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -129,48 +125,54 @@ fun RamsesHeader(
                     IconButton(
                         onClick = onMenuClick,
                         modifier = Modifier
-                            .size(44.dp)
-                            .shadow(10.dp, CircleShape, ambientColor = GoldAccent, spotColor = GoldAccent)
-                            .clip(CircleShape)
-                            .background(CosmicLight.copy(alpha = 0.85f))
-                            .border(1.dp, GoldBorder, CircleShape)
+                            .size(48.dp)
                             .testTag("menu_button")
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = if (isArabic) "لوحة التحكم" else "Control Center",
-                            tint = GoldGlow,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .shadow(10.dp, CircleShape, ambientColor = GoldAccent, spotColor = GoldAccent)
+                                .clip(CircleShape)
+                                .background(Color(0xB8271447))
+                                .border(1.1.dp, GoldBorder, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = if (isArabic) "لوحة التحكم" else "Control Center",
+                                tint = GoldGlow,
+                                modifier = Modifier.size(19.dp)
+                            )
+                        }
                     }
 
                     Surface(
                         shape = RoundedCornerShape(50),
-                        color = CosmicCard.copy(alpha = 0.82f),
+                        color = Color(0xB8271447),
                         border = BorderStroke(1.dp, GoldBorder),
                         modifier = Modifier
-                            .heightIn(min = 38.dp)
+                            .heightIn(min = 36.dp)
                             .clip(RoundedCornerShape(50))
                             .clickable { onToggleLanguage() }
                             .testTag("header_language_toggle")
                     ) {
                         Box(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = if (isArabic) "عربي / EN" else "EN / عربي",
                                 fontFamily = CairoFontFamily,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.SemiBold,
                                 fontSize = 11.sp,
-                                color = GoldGlow,
+                                color = TextPrimary,
                                 maxLines = 1
                             )
                         }
                     }
                 }
 
-                // Center: Official Alpha Go Emblem + Label
+                // Center: Main App Icon positioned cleanly between Control Center & Sign-In Person Circle
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
@@ -194,86 +196,65 @@ fun RamsesHeader(
                         text = "Alpha Go",
                         fontFamily = CinzelFontFamily,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp,
+                        fontSize = 11.5.sp,
                         color = GoldGlow
                     )
                 }
 
-                // Right: Sign-In / Profile Pill Button matching "تسجيل الدخول"
-                Surface(
-                    shape = RoundedCornerShape(50),
-                    color = CosmicCard.copy(alpha = 0.86f),
-                    border = BorderStroke(1.dp, GoldBorder),
-                    shadowElevation = 8.dp,
+                // Right: Circular Person Icon Sign-In Button
+                IconButton(
+                    onClick = onProfileClick,
                     modifier = Modifier
-                        .heightIn(min = 42.dp)
-                        .widthIn(max = 138.dp)
-                        .clip(RoundedCornerShape(50))
-                        .clickable { onProfileClick() }
+                        .size(48.dp)
                         .testTag("profile_button")
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(
-                            text = if (userProfile.isSignedIn) {
-                                userProfile.displayName.substringBefore(" ")
-                            } else {
-                                if (isArabic) "تسجيل الدخول" else "Sign In"
-                            },
-                            fontFamily = CairoFontFamily,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.sp,
-                            color = TextPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-
-                        Box(contentAlignment = Alignment.Center) {
-                            Box(
-                                modifier = Modifier
-                                    .size(26.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        Brush.radialGradient(
-                                            colors = listOf(GoldAccent.copy(alpha = 0.35f), CosmicLight)
+                    Box(contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .shadow(10.dp, CircleShape, ambientColor = GoldAccent, spotColor = GoldAccent)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.radialGradient(
+                                        colors = listOf(
+                                            GoldAccent.copy(alpha = 0.28f),
+                                            Color(0xCC271447)
                                         )
                                     )
-                                    .border(1.dp, GoldAccent, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                val avatarPath = userProfile.avatarUrl
-                                if (!avatarPath.isNullOrBlank()) {
-                                    val modelData: Any = if (avatarPath.startsWith("http")) avatarPath else File(avatarPath)
-                                    AsyncImage(
-                                        model = modelData,
-                                        contentDescription = userProfile.displayName,
-                                        modifier = Modifier
-                                            .size(24.dp)
-                                            .clip(CircleShape),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                } else {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Person,
-                                        contentDescription = if (isArabic) "الحساب" else "Account",
-                                        tint = GoldGlow,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-                            if (isActiveAccount) {
-                                Box(
+                                )
+                                .border(1.2.dp, GoldGlow.copy(alpha = 0.78f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            val avatarPath = userProfile.avatarUrl
+                            if (!avatarPath.isNullOrBlank()) {
+                                val modelData: Any = if (avatarPath.startsWith("http")) avatarPath else File(avatarPath)
+                                AsyncImage(
+                                    model = modelData,
+                                    contentDescription = userProfile.displayName,
                                     modifier = Modifier
-                                        .align(Alignment.TopEnd)
-                                        .size(8.dp)
-                                        .clip(CircleShape)
-                                        .background(EmeraldSuccess)
-                                        .border(1.dp, CosmicBg, CircleShape)
+                                        .size(38.dp)
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = if (isArabic) "تسجيل الدخول" else "Sign In",
+                                    tint = GoldGlow,
+                                    modifier = Modifier.size(21.dp)
                                 )
                             }
+                        }
+
+                        if (isActiveAccount) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .size(9.dp)
+                                    .clip(CircleShape)
+                                    .background(EmeraldSuccess)
+                                    .border(1.dp, CosmicBg, CircleShape)
+                            )
                         }
                     }
                 }
@@ -284,14 +265,14 @@ fun RamsesHeader(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(1.2.dp)
+                .height(1.dp)
                 .background(
                     Brush.horizontalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            GoldAccent.copy(alpha = 0.85f),
+                            GoldAccent.copy(alpha = 0.75f),
                             GoldGlow,
-                            GoldAccent.copy(alpha = 0.85f),
+                            GoldAccent.copy(alpha = 0.75f),
                             Color.Transparent
                         )
                     )

@@ -377,7 +377,10 @@ class GeminiLiveWebSocketClient(
 
         firebaseConnectAndReceiveJob?.cancel()
         firebaseConnectAndReceiveJob = scope.launch {
-            runCatching { ensureFirebaseInitialized(ctx) }
+            if (!ensureFirebaseInitialized(ctx)) {
+                triggerFallbackOnMain("Firebase not configured; switching to local voice loop")
+                return@launch
+            }
             val voiceName = if (currentGemPersona == "GEMINI_DEFAULT") "Puck" else "Charon"
             val sysText = buildLiveSystemInstruction()
 

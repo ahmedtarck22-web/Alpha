@@ -13,8 +13,8 @@ import java.util.UUID
 object FileSearchDefaults {
     const val REQUIRED_PDF_BOOK_COUNT = 5
     const val MAX_PDF_SIZE_BYTES = 50L * 1024L * 1024L // 50 MB per PDF book
-    const val DEFAULT_PROJECT_ID = "gen-lang-client-0007200952"
-    const val DEFAULT_STORAGE_BUCKET = "gen-lang-client-0007200952.firebasestorage.app"
+    const val DEFAULT_PROJECT_ID = "gen-lang-client-0308216826"
+    const val DEFAULT_STORAGE_BUCKET = "gen-lang-client-0308216826.firebasestorage.app"
     const val DEFAULT_GCS_BOOKS_FOLDER = "ramses_rag_books"
     const val DEFAULT_VERTEX_LOCATION = "us-central1"
     const val DEFAULT_DISCOVERY_ENGINE_LOCATION = "global"
