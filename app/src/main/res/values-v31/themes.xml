@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@color/cosmic_bg</item>
+        <item name="android:colorBackground">@color/cosmic_bg</item>
+        <item name="android:statusBarColor">@color/cosmic_bg</item>
+        <item name="android:navigationBarColor">@color/cosmic_bg</item>
+        <item name="android:windowSplashScreenBackground">@color/cosmic_bg</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/cosmic_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo_large</item>
+    </style>
+</resources>

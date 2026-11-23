@@ -1,0 +1,375 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function areStringsFull10(arr, base) {
+      return arr[base] is string && arr[base + 1] is string &&
+             arr[base + 2] is string && arr[base + 3] is string &&
+             arr[base + 4] is string && arr[base + 5] is string &&
+             arr[base + 6] is string && arr[base + 7] is string &&
+             arr[base + 8] is string && arr[base + 9] is string;
+    }
+
+    function areStringsPartial9(arr, n, base) {
+      return arr[base] is string &&
+             (n <= base + 1 || arr[base + 1] is string) &&
+             (n <= base + 2 || arr[base + 2] is string) &&
+             (n <= base + 3 || arr[base + 3] is string) &&
+             (n <= base + 4 || arr[base + 4] is string) &&
+             (n <= base + 5 || arr[base + 5] is string) &&
+             (n <= base + 6 || arr[base + 6] is string) &&
+             (n <= base + 7 || arr[base + 7] is string) &&
+             (n <= base + 8 || arr[base + 8] is string);
+    }
+
+    function areStringsSlice10(arr, n, base) {
+      return n <= base || (n >= base + 10 ? areStringsFull10(arr, base) : areStringsPartial9(arr, n, base));
+    }
+
+    function isValidJoinedStringList(joined, count) {
+      return joined.split('\u001F').size() == count &&
+             joined.matches('^[^\u001F]{1,100}(\u001F[^\u001F]{1,100})*$');
+    }
+
+    function isBoundedStringListChecked(arr, n, maxLen) {
+      return n <= maxLen &&
+             (n == 0 || (
+               areStringsSlice10(arr, n, 0) &&
+               areStringsSlice10(arr, n, 10) &&
+               areStringsSlice10(arr, n, 20) &&
+               areStringsSlice10(arr, n, 30) &&
+               areStringsSlice10(arr, n, 40) &&
+               isValidJoinedStringList(arr.join('\u001F'), n)
+             ));
+    }
+
+    function isBoundedStringList(arr, maxLen) {
+      return arr is list &&
+             maxLen >= 0 &&
+             maxLen <= 50 &&
+             isBoundedStringListChecked(arr, arr.size(), maxLen);
+    }
+
+    // -------------------------------------------------------------------------
+    // 1. User Profiles & Chat History
+    // -------------------------------------------------------------------------
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'displayName']) &&
+             data.keys().hasOnly(['uid', 'email', 'displayName', 'photoUrl', 'createdAt', 'lastActiveAt']) &&
+             data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 &&
+             data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 100 &&
+             (!('email' in data) || (data.email is string && data.email.size() <= 254)) &&
+             (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 1024)) &&
+             (!('createdAt' in data) || (data.createdAt is timestamp && data.createdAt <= request.time)) &&
+             (!('lastActiveAt' in data) || (data.lastActiveAt is timestamp && data.lastActiveAt <= request.time));
+    }
+
+    function isValidChatSession(data, userId, sessionId) {
+      return data.keys().hasAll(['id', 'userId', 'title']) &&
+             data.keys().hasOnly(['id', 'userId', 'title', 'createdAt', 'updatedAt']) &&
+             data.id is string && data.id == sessionId &&
+             data.userId is string && data.userId == userId &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             (!('createdAt' in data) || (data.createdAt is timestamp && data.createdAt <= request.time)) &&
+             (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time));
+    }
+
+    function isValidChatMessage(data, userId, sessionId, messageId) {
+      return data.keys().hasAll(['id', 'sessionId', 'userId', 'sender', 'text']) &&
+             data.keys().hasOnly(['id', 'sessionId', 'userId', 'sender', 'text', 'timestamp', 'isVoiceResponse', 'isError']) &&
+             data.id is string && data.id == messageId &&
+             data.sessionId is string && data.sessionId == sessionId &&
+             data.userId is string && data.userId == userId &&
+             data.sender is string && data.sender in ['USER', 'RAMSES'] &&
+             data.text is string && data.text.size() <= 20000 &&
+             (!('timestamp' in data) || (data.timestamp is timestamp && data.timestamp <= request.time)) &&
+             (!('isVoiceResponse' in data) || data.isVoiceResponse is bool) &&
+             (!('isError' in data) || data.isError is bool);
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(userId) && incoming().uid == userId && isValidUserProfile(incoming());
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming()) &&
+                       incoming().uid == existing().uid &&
+                       (!('createdAt' in existing()) || incoming().createdAt == existing().createdAt) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['email', 'displayName', 'photoUrl', 'createdAt', 'lastActiveAt']);
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /sessions/{sessionId} {
+        allow get: if isOwner(userId) && isValidId(sessionId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(sessionId) && isValidChatSession(incoming(), userId, sessionId);
+        allow update: if isOwner(userId) && isValidId(sessionId) && isValidChatSession(incoming(), userId, sessionId) &&
+                         incoming().id == existing().id &&
+                         incoming().userId == existing().userId &&
+                         (!('createdAt' in existing()) || incoming().createdAt == existing().createdAt) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'createdAt', 'updatedAt']);
+        allow delete: if isOwner(userId) && isValidId(sessionId);
+
+        match /messages/{messageId} {
+          allow get: if isOwner(userId) && isValidId(messageId);
+          allow list: if isOwner(userId);
+          allow create: if isOwner(userId) && isValidId(messageId) && isValidChatMessage(incoming(), userId, sessionId, messageId);
+          allow update: if isOwner(userId) && isValidId(messageId) && isValidChatMessage(incoming(), userId, sessionId, messageId) &&
+                           incoming().id == existing().id &&
+                           incoming().userId == existing().userId &&
+                           incoming().sessionId == existing().sessionId &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['text', 'timestamp', 'isVoiceResponse', 'isError']);
+          allow delete: if isOwner(userId) && isValidId(messageId);
+        }
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 2. Cloud Firebase RAG Knowledge Base (Books -> Small Folders -> Chunks)
+    // -------------------------------------------------------------------------
+    function bookDocPath(bookId) {
+      return /databases/$(database)/documents/rag_books/$(bookId);
+    }
+
+    function folderDocPath(folderId) {
+      return /databases/$(database)/documents/rag_folders/$(folderId);
+    }
+
+    function isBookDataConsistent(bookDoc, ownerId, isShared) {
+      return bookDoc != null &&
+             bookDoc.data.ownerId == ownerId &&
+             bookDoc.data.isShared == isShared;
+    }
+
+    function hasConsistentParentBookAfter(bookId, ownerId, isShared) {
+      return isBookDataConsistent(getAfter(bookDocPath(bookId)), ownerId, isShared);
+    }
+
+    function isFolderDataConsistent(folderDoc, bookId, ownerId, isShared) {
+      return folderDoc != null &&
+             folderDoc.data.bookId == bookId &&
+             folderDoc.data.ownerId == ownerId &&
+             folderDoc.data.isShared == isShared;
+    }
+
+    function hasConsistentParentFolderAfter(folderId, bookId, ownerId, isShared) {
+      return isFolderDataConsistent(getAfter(folderDocPath(folderId)), bookId, ownerId, isShared);
+    }
+
+    function isParentBookCurrentlyShared(bookId) {
+      let bookDoc = get(bookDocPath(bookId));
+      return bookDoc != null && bookDoc.data.isShared == true;
+    }
+
+    function isParentFolderCurrentlyShared(folderId) {
+      let folderDoc = get(folderDocPath(folderId));
+      return folderDoc != null &&
+             folderDoc.data.isShared == true &&
+             isParentBookCurrentlyShared(folderDoc.data.bookId);
+    }
+
+    function canReadRagBook() {
+      return existing().ownerId == request.auth.uid ||
+             existing().isShared == true;
+    }
+
+    function canReadRagFolder() {
+      return existing().ownerId == request.auth.uid ||
+             (existing().isShared == true &&
+              isParentBookCurrentlyShared(existing().bookId));
+    }
+
+    function canReadRagChunk() {
+      return existing().ownerId == request.auth.uid ||
+             (existing().isShared == true &&
+              isParentFolderCurrentlyShared(existing().folderId));
+    }
+
+    function isValidRagBook(data, bookId) {
+      return data.bookId is string && data.bookId == bookId &&
+             data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+             data.isShared is bool &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 300 &&
+             data.author is string && data.author.size() <= 200 &&
+             data.eraCategory is string && data.eraCategory.size() >= 1 && data.eraCategory.size() <= 120 &&
+             data.summary is string && data.summary.size() >= 1 && data.summary.size() <= 3000 &&
+             data.pageCount is int && data.pageCount >= 0 && data.pageCount <= 20000 &&
+             data.folderCount is int && data.folderCount >= 0 && data.folderCount <= 5000 &&
+             data.chunkCount is int && data.chunkCount >= 0 && data.chunkCount <= 50000 &&
+             isBoundedStringList(data.keywords, 40) &&
+             (!('pdfDownloadUrl' in data) || (data.pdfDownloadUrl is string && data.pdfDownloadUrl.size() <= 2048)) &&
+             (!('storagePath' in data) || (data.storagePath is string && data.storagePath.size() <= 512)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidRagFolder(data, folderId) {
+      return data.folderId is string && data.folderId == folderId &&
+             isValidId(data.bookId) &&
+             data.bookTitle is string && data.bookTitle.size() >= 1 && data.bookTitle.size() <= 300 &&
+             data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+             data.isShared is bool &&
+             data.folderIndex is int && data.folderIndex >= 0 && data.folderIndex <= 5000 &&
+             data.folderTitle is string && data.folderTitle.size() >= 1 && data.folderTitle.size() <= 300 &&
+             data.category is string && data.category.size() >= 1 && data.category.size() <= 120 &&
+             data.pageRange is string && data.pageRange.size() <= 80 &&
+             data.topicSummary is string && data.topicSummary.size() >= 1 && data.topicSummary.size() <= 4000 &&
+             data.chunkCount is int && data.chunkCount >= 0 && data.chunkCount <= 5000 &&
+             isBoundedStringList(data.keywords, 50) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidRagChunk(data, chunkId) {
+      return data.chunkId is string && data.chunkId == chunkId &&
+             isValidId(data.bookId) &&
+             data.bookTitle is string && data.bookTitle.size() >= 1 && data.bookTitle.size() <= 300 &&
+             isValidId(data.folderId) &&
+             data.folderTitle is string && data.folderTitle.size() >= 1 && data.folderTitle.size() <= 300 &&
+             data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+             data.isShared is bool &&
+             data.chunkIndex is int && data.chunkIndex >= 0 && data.chunkIndex <= 50000 &&
+             data.pageRange is string && data.pageRange.size() <= 80 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 300 &&
+             data.content is string && data.content.size() >= 1 && data.content.size() <= 25000 &&
+             isBoundedStringList(data.keywords, 40) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /rag_books/{bookId} {
+      allow get: if isSignedIn() && isValidId(bookId) &&
+                    (resource == null || canReadRagBook());
+      allow list: if isSignedIn() && canReadRagBook();
+      allow create: if isSignedIn() &&
+                       isValidId(bookId) &&
+                       incoming().ownerId == request.auth.uid &&
+                       incoming().keys().hasAll(['bookId', 'ownerId', 'isShared', 'title', 'author', 'eraCategory', 'summary', 'pageCount', 'folderCount', 'chunkCount', 'keywords', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['bookId', 'ownerId', 'isShared', 'title', 'author', 'eraCategory', 'summary', 'pageCount', 'folderCount', 'chunkCount', 'keywords', 'pdfDownloadUrl', 'storagePath', 'createdAt', 'updatedAt']) &&
+                       isValidRagBook(incoming(), bookId);
+      allow update: if isSignedIn() &&
+                       isValidId(bookId) &&
+                       isValidRagBook(incoming(), bookId) &&
+                       existing().ownerId == request.auth.uid &&
+                       incoming().ownerId == existing().ownerId &&
+                       incoming().bookId == existing().bookId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['isShared', 'title', 'author', 'eraCategory', 'summary', 'pageCount', 'folderCount', 'chunkCount', 'keywords', 'pdfDownloadUrl', 'storagePath', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(bookId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /rag_folders/{folderId} {
+      allow get: if isSignedIn() && isValidId(folderId) &&
+                    (resource == null || canReadRagFolder());
+      allow list: if isSignedIn() && canReadRagFolder();
+      allow create: if isSignedIn() &&
+                       isValidId(folderId) &&
+                       incoming().ownerId == request.auth.uid &&
+                       incoming().keys().hasAll(['folderId', 'bookId', 'bookTitle', 'ownerId', 'isShared', 'folderIndex', 'folderTitle', 'category', 'pageRange', 'topicSummary', 'chunkCount', 'keywords', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['folderId', 'bookId', 'bookTitle', 'ownerId', 'isShared', 'folderIndex', 'folderTitle', 'category', 'pageRange', 'topicSummary', 'chunkCount', 'keywords', 'createdAt', 'updatedAt']) &&
+                       isValidRagFolder(incoming(), folderId) &&
+                       hasConsistentParentBookAfter(incoming().bookId, request.auth.uid, incoming().isShared);
+      allow update: if isSignedIn() &&
+                       isValidId(folderId) &&
+                       isValidRagFolder(incoming(), folderId) &&
+                       existing().ownerId == request.auth.uid &&
+                       incoming().ownerId == existing().ownerId &&
+                       incoming().folderId == existing().folderId &&
+                       incoming().bookId == existing().bookId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['isShared', 'bookTitle', 'folderIndex', 'folderTitle', 'category', 'pageRange', 'topicSummary', 'chunkCount', 'keywords', 'updatedAt']) &&
+                       hasConsistentParentBookAfter(incoming().bookId, request.auth.uid, incoming().isShared);
+      allow delete: if isSignedIn() && isValidId(folderId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /rag_chunks/{chunkId} {
+      allow get: if isSignedIn() && isValidId(chunkId) &&
+                    (resource == null || canReadRagChunk());
+      allow list: if isSignedIn() && canReadRagChunk();
+      allow create: if isSignedIn() &&
+                       isValidId(chunkId) &&
+                       incoming().ownerId == request.auth.uid &&
+                       incoming().keys().hasAll(['chunkId', 'bookId', 'bookTitle', 'folderId', 'folderTitle', 'ownerId', 'isShared', 'chunkIndex', 'pageRange', 'title', 'content', 'keywords', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['chunkId', 'bookId', 'bookTitle', 'folderId', 'folderTitle', 'ownerId', 'isShared', 'chunkIndex', 'pageRange', 'title', 'content', 'keywords', 'createdAt', 'updatedAt']) &&
+                       isValidRagChunk(incoming(), chunkId) &&
+                       hasConsistentParentBookAfter(incoming().bookId, request.auth.uid, incoming().isShared) &&
+                       hasConsistentParentFolderAfter(incoming().folderId, incoming().bookId, request.auth.uid, incoming().isShared);
+      allow update: if isSignedIn() &&
+                       isValidId(chunkId) &&
+                       isValidRagChunk(incoming(), chunkId) &&
+                       existing().ownerId == request.auth.uid &&
+                       incoming().ownerId == existing().ownerId &&
+                       incoming().chunkId == existing().chunkId &&
+                       incoming().bookId == existing().bookId &&
+                       incoming().folderId == existing().folderId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['isShared', 'bookTitle', 'folderTitle', 'chunkIndex', 'pageRange', 'title', 'content', 'keywords', 'updatedAt']) &&
+                       hasConsistentParentBookAfter(incoming().bookId, request.auth.uid, incoming().isShared) &&
+                       hasConsistentParentFolderAfter(incoming().folderId, incoming().bookId, request.auth.uid, incoming().isShared);
+      allow delete: if isSignedIn() && isValidId(chunkId) && existing().ownerId == request.auth.uid;
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. Educational Cloud Videos (/videos/{videoId})
+    // -------------------------------------------------------------------------
+    function isValidCloudVideo(data, videoId) {
+      return data.videoId is string && data.videoId == videoId &&
+             data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+             data.isShared is bool &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 300 &&
+             data.description is string && data.description.size() <= 2000 &&
+             data.videoDownloadUrl is string && data.videoDownloadUrl.size() >= 8 && data.videoDownloadUrl.size() <= 2048 &&
+             data.videoDownloadUrl.matches('^https://.*') &&
+             data.storagePath is string && data.storagePath.size() >= 1 && data.storagePath.size() <= 512 &&
+             data.durationLabel is string && data.durationLabel.size() <= 40 &&
+             data.fileSizeBytes is int && data.fileSizeBytes >= 0 && data.fileSizeBytes <= 524288000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /videos/{videoId} {
+      allow get: if isSignedIn() && isValidId(videoId) &&
+                    (resource == null || existing().ownerId == request.auth.uid || existing().isShared == true);
+      allow list: if isSignedIn() &&
+                     (existing().ownerId == request.auth.uid || existing().isShared == true);
+      allow create: if isSignedIn() &&
+                       isValidId(videoId) &&
+                       incoming().ownerId == request.auth.uid &&
+                       incoming().keys().hasAll(['videoId', 'ownerId', 'isShared', 'title', 'description', 'videoDownloadUrl', 'storagePath', 'durationLabel', 'fileSizeBytes', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['videoId', 'ownerId', 'isShared', 'title', 'description', 'videoDownloadUrl', 'storagePath', 'durationLabel', 'fileSizeBytes', 'createdAt', 'updatedAt']) &&
+                       isValidCloudVideo(incoming(), videoId);
+      allow update: if isSignedIn() &&
+                       isValidId(videoId) &&
+                       isValidCloudVideo(incoming(), videoId) &&
+                       existing().ownerId == request.auth.uid &&
+                       incoming().ownerId == existing().ownerId &&
+                       incoming().videoId == existing().videoId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['isShared', 'title', 'description', 'durationLabel', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(videoId) && existing().ownerId == request.auth.uid;
+    }
+  }
+}

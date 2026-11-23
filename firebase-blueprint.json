@@ -1,0 +1,163 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information stored under users collection",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "FieldValue.serverTimestamp()" },
+        "lastActiveAt": { "type": "string", "format": "date-time", "description": "FieldValue.serverTimestamp()" }
+      },
+      "required": ["uid", "displayName"]
+    },
+    "ChatSession": {
+      "title": "ChatSession",
+      "description": "A conversation session belonging to an authenticated user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "FieldValue.serverTimestamp()" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "FieldValue.serverTimestamp()" }
+      },
+      "required": ["id", "userId", "title"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "A message within a user chat session",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "userId": { "type": "string" },
+        "sender": { "type": "string", "enum": ["USER", "RAMSES"] },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "FieldValue.serverTimestamp()" },
+        "isVoiceResponse": { "type": "boolean" },
+        "isError": { "type": "boolean" }
+      },
+      "required": ["id", "sessionId", "userId", "sender", "text"]
+    },
+    "RagBook": {
+      "title": "RagBook",
+      "description": "Metadata document for a converted PDF book stored in the Cloud Firebase RAG library",
+      "type": "object",
+      "properties": {
+        "bookId": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "isShared": { "type": "boolean" },
+        "title": { "type": "string" },
+        "author": { "type": "string" },
+        "eraCategory": { "type": "string" },
+        "summary": { "type": "string" },
+        "pageCount": { "type": "integer" },
+        "folderCount": { "type": "integer" },
+        "chunkCount": { "type": "integer" },
+        "keywords": { "type": "array" },
+        "pdfDownloadUrl": { "type": "string" },
+        "storagePath": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "FieldValue.serverTimestamp()" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "FieldValue.serverTimestamp()" }
+      },
+      "required": ["bookId", "ownerId", "isShared", "title", "author", "eraCategory", "summary", "pageCount", "folderCount", "chunkCount", "keywords", "createdAt", "updatedAt"]
+    },
+    "RagFolder": {
+      "title": "RagFolder",
+      "description": "Small thematic folder/chapter subdividing a book in the Cloud Firebase RAG library",
+      "type": "object",
+      "properties": {
+        "folderId": { "type": "string" },
+        "bookId": { "type": "string" },
+        "bookTitle": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "isShared": { "type": "boolean" },
+        "folderIndex": { "type": "integer" },
+        "folderTitle": { "type": "string" },
+        "category": { "type": "string" },
+        "pageRange": { "type": "string" },
+        "topicSummary": { "type": "string" },
+        "chunkCount": { "type": "integer" },
+        "keywords": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "FieldValue.serverTimestamp()" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "FieldValue.serverTimestamp()" }
+      },
+      "required": ["folderId", "bookId", "bookTitle", "ownerId", "isShared", "folderIndex", "folderTitle", "category", "pageRange", "topicSummary", "chunkCount", "keywords", "createdAt", "updatedAt"]
+    },
+    "RagChunk": {
+      "title": "RagChunk",
+      "description": "Indexed text RAG chunk belonging to a small folder and book in Cloud Firebase",
+      "type": "object",
+      "properties": {
+        "chunkId": { "type": "string" },
+        "bookId": { "type": "string" },
+        "bookTitle": { "type": "string" },
+        "folderId": { "type": "string" },
+        "folderTitle": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "isShared": { "type": "boolean" },
+        "chunkIndex": { "type": "integer" },
+        "pageRange": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "keywords": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "FieldValue.serverTimestamp()" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "FieldValue.serverTimestamp()" }
+      },
+      "required": ["chunkId", "bookId", "bookTitle", "folderId", "folderTitle", "ownerId", "isShared", "chunkIndex", "pageRange", "title", "content", "keywords", "createdAt", "updatedAt"]
+    },
+    "CloudVideo": {
+      "title": "CloudVideo",
+      "description": "Metadata document for an educational video uploaded to Firebase Storage",
+      "type": "object",
+      "properties": {
+        "videoId": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "isShared": { "type": "boolean" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "videoDownloadUrl": { "type": "string" },
+        "storagePath": { "type": "string" },
+        "durationLabel": { "type": "string" },
+        "fileSizeBytes": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "FieldValue.serverTimestamp()" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "FieldValue.serverTimestamp()" }
+      },
+      "required": ["videoId", "ownerId", "isShared", "title", "description", "videoDownloadUrl", "storagePath", "durationLabel", "fileSizeBytes", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile document"
+    },
+    "/users/{userId}/sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/ChatSession" },
+      "description": "User chat sessions"
+    },
+    "/users/{userId}/sessions/{sessionId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Messages belonging to a chat session"
+    },
+    "/rag_books/{bookId}": {
+      "schema": { "$ref": "#/entities/RagBook" },
+      "description": "Cloud Firebase RAG books catalog"
+    },
+    "/rag_folders/{folderId}": {
+      "schema": { "$ref": "#/entities/RagFolder" },
+      "description": "Small thematic RAG folders subdividing each book"
+    },
+    "/rag_chunks/{chunkId}": {
+      "schema": { "$ref": "#/entities/RagChunk" },
+      "description": "Indexed RAG text chunks inside each folder"
+    },
+    "/videos/{videoId}": {
+      "schema": { "$ref": "#/entities/CloudVideo" },
+      "description": "Online educational videos uploaded to Firebase Storage"
+    }
+  }
+}

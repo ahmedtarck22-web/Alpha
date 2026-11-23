@@ -1,0 +1,6 @@
+{
+  "name": "Alpha Go",
+  "description": "Alpha Go - Interactive AI Learning App with Gemini Live voice dialogue, homework image analysis, interactive quizzes, video lessons, and Cloud RAG library.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

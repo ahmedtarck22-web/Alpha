@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alpha Go - التطبيق التعليمي التفاعلي</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Cairo & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cosmicBg: '#0E061A',
+                        cosmicDark: '#0B0415',
+                        cosmicCard: '#1F1135',
+                        cosmicLight: '#2D1B4E',
+                        goldAccent: '#F3C65F',
+                        goldGlow: '#FFD778',
+                        goldBorder: 'rgba(243, 198, 95, 0.4)',
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-subtle': 'bounceSubtle 2s infinite',
+                        'wave': 'waveAnimation 1.5s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        bounceSubtle: {
+                            '0%, 100%': { transform: 'translateY(-3%)' },
+                            '50%': { transform: 'translateY(0)' },
+                        },
+                        waveAnimation: {
+                            '0%': { height: '10%' },
+                            '100%': { height: '100%' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Cairo', 'Inter', sans-serif;
+            background-color: #05020a;
+            background-image: 
+                radial-gradient(circle at 20% 20%, rgba(45, 27, 78, 0.4) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(243, 198, 95, 0.08) 0%, transparent 40%);
+        }
+        
+        /* Custom scrollbar for mobile frame */
+        .custom-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: rgba(14, 6, 26, 0.5);
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: rgba(243, 198, 95, 0.3);
+            border-radius: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(243, 198, 95, 0.6);
+        }
+
+        /* Glassmorphism styling */
+        .glass-card {
+            background: rgba(31, 17, 53, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(243, 198, 95, 0.35);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .gold-glow-btn {
+            box-shadow: 0 0 15px rgba(243, 198, 95, 0.35);
+            transition: all 0.3s ease;
+        }
+        .gold-glow-btn:hover {
+            box-shadow: 0 0 25px rgba(243, 198, 95, 0.65);
+            transform: translateY(-1px);
+        }
+        
+        .gold-text-gradient {
+            background: linear-gradient(135deg, #FFF0C3 0%, #F3C65F 50%, #D49B35 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="h-full text-white flex flex-col justify-center items-center p-2 sm:p-6 overflow-x-hidden select-none">
+
+    <!-- Top Viewport Control Bar -->
+    <div class="mb-3 flex items-center justify-between w-full max-w-sm sm:max-w-md px-2 text-xs text-gray-400">
+        <div class="flex items-center space-x-2 space-x-reverse">
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="font-bold text-gray-300">Alpha Go - Interactive App UI</span>
+        </div>
+        <button onclick="toggleDeviceFrame()" class="hover:text-goldAccent transition-colors">
+            <i class="fa-solid fa-expand mr-1"></i> <span id="frameToggleText">ملء الشاشة</span>
+        </button>
+    </div>
+
+    <!-- Mobile Device Mockup Wrapper -->
+    <div id="deviceContainer" class="relative w-full max-w-[390px] h-[830px] bg-cosmicBg rounded-[48px] border-[10px] border-gray-900 shadow-[0_0_60px_rgba(243,198,95,0.2)] overflow-hidden flex flex-col transition-all duration-300">
+        
+        <!-- Dynamic Island / Phone Notch -->
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-50 flex items-center justify-center space-x-2">
+            <div class="w-2.5 h-2.5 bg-gray-900 rounded-full border border-gray-800"></div>
+            <div class="w-3 h-3 bg-gray-950 rounded-full border border-gray-800 flex items-center justify-center">
+                <div class="w-1 h-1 bg-blue-900/60 rounded-full"></div>
+            </div>
+        </div>
+
+        <!-- Phone Top Status Bar -->
+        <div class="w-full pt-2 px-6 pb-1 flex justify-between items-center text-[11px] font-semibold text-gray-300 z-40 bg-cosmicBg/90 backdrop-blur-md">
+            <span>9:41</span>
+            <div class="flex items-center space-x-1.5 space-x-reverse">
+                <i class="fa-solid fa-signal text-[10px]"></i>
+                <i class="fa-solid fa-wifi text-[10px]"></i>
+                <i class="fa-solid fa-battery-full text-[12px] text-goldAccent"></i>
+            </div>
+        </div>
+
+        <!-- APP TOP HEADER WITH OFFICIAL APP ICON -->
+        <header class="w-full px-4 py-2.5 bg-cosmicCard/95 border-b border-goldBorder flex items-center justify-between z-30 relative backdrop-blur-md">
+            <!-- Control Center Drawer Toggle -->
+            <button onclick="toggleDrawer(true)" class="w-10 h-10 rounded-full bg-cosmicLight border border-goldBorder flex items-center justify-center text-goldAccent hover:bg-goldAccent/20 transition-all active:scale-95 shadow-md">
+                <i class="fa-solid fa-bars text-lg"></i>
+            </button>
+
+            <!-- Official Alpha Go App Icon Image -->
+            <div class="flex items-center justify-center py-0.5">
+                <img src="d7c4b6de-9c71-4707-8cc6-bff589904b8a.jpeg" 
+                     alt="Alpha Go" 
+                     class="h-12 w-12 object-cover rounded-xl border border-goldAccent shadow-[0_0_15px_rgba(243,198,95,0.4)] cursor-pointer hover:scale-105 transition-transform"
+                     onclick="switchTab('home')" />
+            </div>
+
+            <!-- Profile Avatar / Login Toggle -->
+            <button onclick="toggleModal('loginModal', true)" class="w-10 h-10 rounded-full bg-cosmicLight border border-goldBorder flex items-center justify-center text-goldAccent hover:bg-goldAccent/20 transition-all active:scale-95 relative shadow-md">
+                <i class="fa-regular fa-user text-lg"></i>
+                <span id="profileStatusDot" class="absolute top-0 right-0 w-2.5 h-2.5 bg-gray-500 rounded-full border border-cosmicBg"></span>
+            </button>
+        </header>
+
+        <!-- APP MAIN VIEW AREA -->
+        <main class="flex-1 overflow-hidden relative flex flex-col bg-gradient-to-b from-cosmicBg via-cosmicDark to-cosmicBg">
+            
+            <!-- VIEW 1: HOME (الرئيسية) - Clean Minimal AI Chat Interface -->
+            <div id="tab-home" class="tab-content flex-1 flex flex-col h-full overflow-hidden p-3 custom-scroll">
+                
+                <!-- Chat Feed Area (Clean & Open Space) -->
+                <div id="chatFeed" class="flex-1 space-y-3 p-1 custom-scroll overflow-y-auto mb-2 flex flex-col">
+                    <!-- Faint Minimal Background Watermark -->
+                    <div id="emptyChatWatermark" class="my-auto flex flex-col items-center justify-center text-center opacity-30 py-8 select-none">
+                        <img src="d7c4b6de-9c71-4707-8cc6-bff589904b8a.jpeg" alt="Watermark" class="w-20 h-20 rounded-2xl border border-goldBorder/40 mb-3 grayscale filter brightness-90">
+                        <p class="text-xs text-goldAccent font-semibold font-cairo">Alpha Go</p>
+                    </div>
+                </div>
+
+                <!-- UNIFIED ONE-BAR CHAT INPUT -->
+                <div class="relative shrink-0 mt-auto pt-1">
+                    
+                    <!-- Plus Popup Menu (Hidden by default) -->
+                    <div id="plusMenu" class="hidden absolute bottom-14 right-2 z-40 bg-cosmicCard border border-goldBorder rounded-2xl p-2 shadow-2xl space-y-1 w-52 backdrop-blur-xl">
+                        <button onclick="triggerImageAnalysis()" class="w-full flex items-center space-x-2.5 space-x-reverse px-3 py-2 rounded-xl text-xs text-gray-200 hover:bg-goldAccent/20 hover:text-goldAccent transition-colors">
+                            <i class="fa-solid fa-camera text-goldAccent text-sm w-4"></i>
+                            <span>تحليل الصور والواجبات</span>
+                        </button>
+                        <div class="h-px bg-goldBorder/20 my-1"></div>
+                        <button onclick="toggleDeepResearch()" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs text-gray-200 hover:bg-goldAccent/20 transition-colors">
+                            <span class="flex items-center space-x-2.5 space-x-reverse">
+                                <i class="fa-solid fa-magnifying-glass-location text-goldAccent text-sm w-4"></i>
+                                <span>البحث العميق</span>
+                            </span>
+                            <span id="deepSearchToggleDot" class="w-2.5 h-2.5 rounded-full bg-gray-500"></span>
+                        </button>
+                    </div>
+
+                    <!-- Single Chat Bar Box -->
+                    <div class="flex items-center bg-cosmicCard/95 border border-goldBorder rounded-full p-1.5 shadow-xl space-x-1.5 space-x-reverse backdrop-blur-md">
+                        
+                        <!-- Plus Button -->
+                        <button onclick="togglePlusMenu()" class="w-9 h-9 rounded-full bg-cosmicLight border border-goldBorder flex items-center justify-center text-goldAccent hover:bg-goldAccent/20 transition-all shrink-0 active:scale-95">
+                            <i class="fa-solid fa-plus text-sm" id="plusIcon"></i>
+                        </button>
+
+                        <!-- Input Field -->
+                        <input type="text" id="chatInput" onkeydown="handleChatKey(event)" placeholder="اكتب سؤالك هنا..." class="flex-1 bg-transparent text-xs text-white placeholder-gray-400 focus:outline-none px-2 font-cairo">
+
+                        <!-- Mic Button -->
+                        <button onclick="toggleVoiceNote()" id="micBtn" class="w-8 h-8 rounded-full flex items-center justify-center text-goldAccent hover:text-goldGlow transition-colors shrink-0">
+                            <i class="fa-solid fa-microphone text-sm"></i>
+                        </button>
+
+                        <!-- Live Voice Call Button -->
+                        <button onclick="startVoiceCall()" class="w-9 h-9 rounded-full bg-goldAccent text-cosmicBg flex items-center justify-center font-bold hover:bg-goldGlow transition-all shrink-0 gold-glow-btn active:scale-95">
+                            <i class="fa-solid fa-phone text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- VIEW 2: QUIZZES (اختبارات) -->
+            <div id="tab-quizzes" class="tab-content hidden flex-1 flex flex-col p-4 custom-scroll overflow-y-auto">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-base font-bold text-goldAccent flex items-center">
+                        <i class="fa-solid fa-trophy ml-2"></i> <span id="quizTabTitle">اختبار التحدي التاريخي</span>
+                    </h2>
+                    <span class="text-xs bg-goldAccent/20 text-goldAccent px-2.5 py-1 rounded-full border border-goldBorder">تفاعلي</span>
+                </div>
+
+                <!-- Interactive Quiz Card -->
+                <div id="quizContainer" class="glass-card rounded-2xl p-5 border border-goldBorder flex-1 flex flex-col justify-between shadow-xl">
+                    <div>
+                        <div class="flex justify-between items-center text-xs text-gray-400 mb-3">
+                            <span>السؤال <span id="quizCurrentIndex">1</span> من <span id="quizTotalCount">3</span></span>
+                            <span class="text-goldAccent font-bold">النقاط: <span id="quizScore">0</span> XP</span>
+                        </div>
+                        <div class="w-full bg-cosmicLight h-2 rounded-full overflow-hidden mb-5">
+                            <div id="quizProgressBar" class="bg-gradient-to-r from-goldAccent to-goldGlow h-full w-1/3 transition-all duration-300"></div>
+                        </div>
+
+                        <h3 id="quizQuestionText" class="text-sm font-bold text-white leading-relaxed mb-6">
+                            مؤسس الأسرة الفرعونية الأولى وموحد القطرين عام 3200 ق.م هو:
+                        </h3>
+
+                        <div id="quizOptions" class="space-y-3">
+                            <!-- Options generated dynamically -->
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-goldBorder/20 flex justify-between items-center">
+                        <span id="quizFeedbackText" class="text-xs font-semibold text-gray-300">اختر الإجابة الصحيحة للتقدم!</span>
+                        <button onclick="nextQuizQuestion()" id="quizNextBtn" disabled class="px-4 py-2 rounded-xl bg-goldAccent text-cosmicBg font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md">
+                            التالي <i class="fa-solid fa-arrow-left mr-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 3: VIDEOS (فيديوهات) -->
+            <div id="tab-videos" class="tab-content hidden flex-1 flex flex-col p-4 custom-scroll overflow-y-auto">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-base font-bold text-goldAccent flex items-center">
+                        <i class="fa-solid fa-circle-play ml-2"></i> <span id="videosTabTitle">الدروس المرئية</span>
+                    </h2>
+                    <span class="text-xs text-gray-400">ذكاء اصطناعي تفاعلي</span>
+                </div>
+
+                <div id="videoCardsList" class="space-y-3">
+                    <!-- Dynamic Video Cards -->
+                </div>
+            </div>
+
+            <!-- VIEW 4: LIBRARY (المكتبة) -->
+            <div id="tab-library" class="tab-content hidden flex-1 flex flex-col p-4 custom-scroll overflow-y-auto">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-base font-bold text-goldAccent flex items-center">
+                        <i class="fa-solid fa-book-open ml-2"></i> <span id="libraryTabTitle">المكتبة الرقمية والملخصات</span>
+                    </h2>
+                    <span class="text-xs text-gray-400">PDF وتلخيص ذكي</span>
+                </div>
+
+                <div id="libraryBooksGrid" class="grid grid-cols-2 gap-3">
+                    <!-- Dynamic Book Cards -->
+                </div>
+            </div>
+
+        </main>
+
+        <!-- APP BOTTOM NAVIGATION BAR -->
+        <nav class="w-full bg-cosmicCard border-t border-goldBorder px-2 py-2 grid grid-cols-4 gap-1 z-30">
+            <button onclick="switchTab('home')" id="nav-home" class="nav-btn flex flex-col items-center justify-center py-1 rounded-xl text-goldAccent">
+                <i class="fa-solid fa-house text-base mb-1"></i>
+                <span class="text-[10px] font-bold font-cairo" id="navLabelHome">الرئيسية</span>
+            </button>
+            <button onclick="switchTab('quizzes')" id="nav-quizzes" class="nav-btn flex flex-col items-center justify-center py-1 rounded-xl text-gray-400 hover:text-goldAccent transition-colors">
+                <i class="fa-solid fa-clipboard-question text-base mb-1"></i>
+                <span class="text-[10px] font-bold font-cairo" id="navLabelQuizzes">اختبارات</span>
+            </button>
+            <button onclick="switchTab('videos')" id="nav-videos" class="nav-btn flex flex-col items-center justify-center py-1 rounded-xl text-gray-400 hover:text-goldAccent transition-colors">
+                <i class="fa-solid fa-play text-base mb-1"></i>
+                <span class="text-[10px] font-bold font-cairo" id="navLabelVideos">فيديوهات</span>
+            </button>
+            <button onclick="switchTab('library')" id="nav-library" class="nav-btn flex flex-col items-center justify-center py-1 rounded-xl text-gray-400 hover:text-goldAccent transition-colors">
+                <i class="fa-solid fa-book text-base mb-1"></i>
+                <span class="text-[10px] font-bold font-cairo" id="navLabelLibrary">المكتبة</span>
+            </button>
+        </nav>
+
+        <!-- OVERLAY 1: CONTROL CENTER SLIDE-OVER DRAWER -->
+        <div id="drawerOverlay" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm z-50 transition-opacity">
+            <div id="drawerContent" class="w-3/4 max-w-[280px] h-full bg-cosmicCard border-l border-goldBorder p-5 flex flex-col justify-between shadow-2xl transform transition-transform duration-300">
+                <div>
+                    <!-- Drawer Header with Official Emblem -->
+                    <div class="flex items-center justify-between pb-4 mb-4 border-b border-goldBorder/30">
+                        <div class="flex items-center space-x-2 space-x-reverse">
+                            <img src="d7c4b6de-9c71-4707-8cc6-bff589904b8a.jpeg" alt="Logo" class="h-8 w-auto rounded-lg border border-goldBorder">
+                            <h3 class="text-sm font-bold gold-text-gradient" id="drawerTitle">لوحة التحكم</h3>
+                        </div>
+                        <button onclick="toggleDrawer(false)" class="text-gray-400 hover:text-goldAccent text-lg">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <!-- Language Switcher Bar inside Drawer -->
+                    <div class="mb-5 bg-cosmicLight p-2 rounded-xl border border-goldBorder/40 flex items-center justify-between">
+                        <span class="text-xs text-gray-200 font-semibold flex items-center">
+                            <i class="fa-solid fa-globe text-goldAccent ml-1.5"></i> <span id="langMenuLabel">اللغة / Language</span>
+                        </span>
+                        <button onclick="toggleLanguage()" class="px-3 py-1 rounded-lg bg-goldAccent text-cosmicBg font-bold text-xs hover:bg-goldGlow transition-all">
+                            <span id="currentLangBtn">EN</span>
+                        </button>
+                    </div>
+
+                    <!-- Control Center Menu Links -->
+                    <div class="space-y-1">
+                        <button onclick="drawerAction('myAccount')" class="w-full flex items-center space-x-3 space-x-reverse px-3 py-2.5 rounded-xl text-xs text-gray-200 hover:bg-goldAccent/15 hover:text-goldAccent transition-all">
+                            <i class="fa-regular fa-id-badge text-goldAccent text-sm w-5"></i>
+                            <span id="menuAccount">حسابي الشخصي</span>
+                        </button>
+                        <button onclick="drawerAction('curriculum')" class="w-full flex items-center space-x-3 space-x-reverse px-3 py-2.5 rounded-xl text-xs text-gray-200 hover:bg-goldAccent/15 hover:text-goldAccent transition-all">
+                            <i class="fa-solid fa-graduation-cap text-goldAccent text-sm w-5"></i>
+                            <span id="menuCurriculum">المنهج الدراسي</span>
+                        </button>
+                        <button onclick="drawerAction('achievements')" class="w-full flex items-center space-x-3 space-x-reverse px-3 py-2.5 rounded-xl text-xs text-gray-200 hover:bg-goldAccent/15 hover:text-goldAccent transition-all">
+                            <i class="fa-solid fa-medal text-goldAccent text-sm w-5"></i>
+                            <span id="menuAchievements">الإنجازات والجوائز</span>
+                        </button>
+                        <button onclick="drawerAction('contact')" class="w-full flex items-center space-x-3 space-x-reverse px-3 py-2.5 rounded-xl text-xs text-gray-200 hover:bg-goldAccent/15 hover:text-goldAccent transition-all">
+                            <i class="fa-solid fa-headset text-goldAccent text-sm w-5"></i>
+                            <span id="menuContact">تواصل معنا</span>
+                        </button>
+                        <button onclick="drawerAction('settings')" class="w-full flex items-center space-x-3 space-x-reverse px-3 py-2.5 rounded-xl text-xs text-gray-200 hover:bg-goldAccent/15 hover:text-goldAccent transition-all">
+                            <i class="fa-solid fa-gear text-goldAccent text-sm w-5"></i>
+                            <span id="menuSettings">الإعدادات</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Logout Button -->
+                <button onclick="drawerAction('logout')" class="w-full flex items-center space-x-3 space-x-reverse px-3 py-2.5 rounded-xl text-xs text-rose-400 hover:bg-rose-500/10 transition-all border border-rose-500/30">
+                    <i class="fa-solid fa-arrow-right-from-bracket text-sm w-5"></i>
+                    <span id="menuLogout">تسجيل الخروج</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- OVERLAY 2: LIVE VOICE CALL OVERLAY -->
+        <div id="voiceCallModal" class="hidden absolute inset-0 bg-cosmicBg/95 backdrop-blur-md z-50 flex flex-col items-center justify-between p-8">
+            <div class="w-full flex justify-between items-center text-goldAccent text-xs">
+                <span class="flex items-center"><i class="fa-solid fa-shield-halved ml-1"></i> Alpha Go Live Call</span>
+                <span id="callDuration" class="font-mono">00:00</span>
+            </div>
+
+            <div class="flex flex-col items-center">
+                <!-- Glowing App Icon Frame for Call -->
+                <div class="relative mb-6">
+                    <div class="w-28 h-28 rounded-3xl bg-gradient-to-tr from-goldAccent to-purple-600 p-1 animate-pulse shadow-2xl">
+                        <img src="d7c4b6de-9c71-4707-8cc6-bff589904b8a.jpeg" alt="Alpha Go Icon" class="w-full h-full object-cover rounded-[22px]">
+                    </div>
+                    <div class="absolute inset-0 rounded-3xl border-2 border-goldAccent animate-ping opacity-25"></div>
+                </div>
+
+                <h3 class="text-lg font-bold text-white mb-1" id="callTitle">Alpha Go Assistant</h3>
+                <p class="text-xs text-goldGlow mb-6" id="callStatus">جاري الاستماع إليك... تحدث الآن</p>
+
+                <!-- Audio Waveform Visualization -->
+                <div class="flex items-center justify-center space-x-1 space-x-reverse h-10 w-48">
+                    <div class="w-1.5 bg-goldAccent rounded-full animate-wave" style="animation-delay: 0.1s"></div>
+                    <div class="w-1.5 bg-goldAccent rounded-full animate-wave" style="animation-delay: 0.3s"></div>
+                    <div class="w-1.5 bg-goldGlow rounded-full animate-wave" style="animation-delay: 0.2s"></div>
+                    <div class="w-1.5 bg-goldAccent rounded-full animate-wave" style="animation-delay: 0.4s"></div>
+                    <div class="w-1.5 bg-goldAccent rounded-full animate-wave" style="animation-delay: 0.15s"></div>
+                </div>
+            </div>
+
+            <!-- Call Controls -->
+            <div class="flex items-center space-x-6 space-x-reverse">
+                <button onclick="toggleCallMute()" id="callMuteBtn" class="w-12 h-12 rounded-full bg-cosmicLight border border-goldBorder flex items-center justify-center text-white hover:text-goldAccent">
+                    <i class="fa-solid fa-microphone"></i>
+                </button>
+                <button onclick="endVoiceCall()" class="w-16 h-16 rounded-full bg-rose-600 text-white flex items-center justify-center text-xl shadow-lg hover:bg-rose-700 transition-all active:scale-95">
+                    <i class="fa-solid fa-phone-slash"></i>
+                </button>
+                <button onclick="toggleCallSpeaker()" id="callSpeakerBtn" class="w-12 h-12 rounded-full bg-cosmicLight border border-goldBorder flex items-center justify-center text-white hover:text-goldAccent">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- OVERLAY 3: LOGIN / PROFILE MODAL -->
+        <div id="loginModal" class="hidden absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="glass-card rounded-2xl p-5 w-full max-w-[320px] border border-goldBorder relative">
+                <button onclick="toggleModal('loginModal', false)" class="absolute top-3 left-3 text-gray-400 hover:text-goldAccent">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+
+                <div class="text-center mb-4">
+                    <img src="d7c4b6de-9c71-4707-8cc6-bff589904b8a.jpeg" alt="Logo" class="h-12 w-auto mx-auto rounded-xl border border-goldBorder mb-2 shadow-md">
+                    <h3 class="text-base font-bold text-white" id="loginModalTitle">تسجيل الدخول / حساب الطالب</h3>
+                    <p class="text-xs text-gray-400" id="loginModalSub">أدخل اسمك لحفظ تقدمك في Alpha Go</p>
+                </div>
+
+                <form onsubmit="saveUserProfile(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-300 mb-1" id="labelStudentName">اسم الطالب / الطالبة</label>
+                        <input type="text" id="studentNameInput" required placeholder="مثال: أحمد محمد" class="w-full bg-cosmicLight border border-goldBorder/50 rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-goldAccent">
+                    </div>
+
+                    <button type="submit" class="w-full py-2.5 rounded-xl bg-goldAccent text-cosmicBg font-bold text-xs hover:bg-goldGlow transition-all gold-glow-btn">
+                        حفظ ومتابعة
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- OVERLAY 4: IMAGE ANALYSIS UPLOAD MODAL -->
+        <div id="imageAnalysisModal" class="hidden absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="glass-card rounded-2xl p-5 w-full max-w-[320px] border border-goldBorder text-center">
+                <h3 class="text-sm font-bold text-goldAccent mb-2 flex items-center justify-center">
+                    <i class="fa-solid fa-camera ml-2"></i> تحليل الواجبات بالذكاء الاصطناعي
+                </h3>
+                <p class="text-xs text-gray-300 mb-4">اختر صورة السؤال أو الامتحان ليقوم الذكاء الاصطناعي بحلها فوراً</p>
+
+                <div class="border-2 border-dashed border-goldBorder/50 rounded-xl p-6 bg-cosmicLight/50 mb-4 cursor-pointer hover:border-goldAccent transition-colors" onclick="simulateUploadImage()">
+                    <i class="fa-solid fa-cloud-arrow-up text-3xl text-goldAccent mb-2"></i>
+                    <p class="text-xs text-gray-200">اضغط هنا لرفع صورة المسألة</p>
+                    <span class="text-[10px] text-gray-400">JPG, PNG أو التقاط مباشر</span>
+                </div>
+
+                <div class="flex justify-end space-x-2 space-x-reverse">
+                    <button onclick="toggleModal('imageAnalysisModal', false)" class="px-4 py-2 rounded-xl bg-cosmicLight text-xs text-gray-300">إلغاء</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- OVERLAY 5: VIDEO PLAYER MODAL -->
+        <div id="videoModal" class="hidden absolute inset-0 bg-black/95 z-50 flex flex-col justify-between p-4">
+            <div class="flex justify-between items-center text-white">
+                <span class="text-xs font-bold text-goldAccent" id="activeVideoTitle">الدرس الأول: نشأة الحضارة المصرية</span>
+                <button onclick="toggleModal('videoModal', false)" class="text-gray-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Video Player Canvas Simulation -->
+            <div class="relative w-full aspect-video bg-cosmicCard rounded-xl border border-goldBorder flex items-center justify-center overflow-hidden my-auto shadow-2xl">
+                <i class="fa-solid fa-landmark text-6xl text-goldAccent/20"></i>
+                <button onclick="toggleVideoPlay()" id="videoPlayBtn" class="absolute w-14 h-14 rounded-full bg-goldAccent text-cosmicBg flex items-center justify-center text-xl shadow-lg hover:scale-105 transition-all">
+                    <i class="fa-solid fa-play ml-1"></i>
+                </button>
+                <!-- Video Progress Bar -->
+                <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-2 flex items-center space-x-2 space-x-reverse text-[10px] text-gray-300">
+                    <span>02:15</span>
+                    <div class="flex-1 bg-gray-700 h-1 rounded-full overflow-hidden">
+                        <div class="bg-goldAccent h-full w-1/3"></div>
+                    </div>
+                    <span>10:45</span>
+                </div>
+            </div>
+
+            <div class="bg-cosmicCard/80 p-3 rounded-xl border border-goldBorder/30 text-xs text-gray-300">
+                <p class="font-bold text-goldAccent mb-1">ملخص الذكاء الاصطناعي للدرس:</p>
+                <p id="videoSummaryText">يتناول هذا الفيديو توحيد القطرين على يد الملك مينا، ونشأة القرى والمدن في مصر القديمة.</p>
+            </div>
+        </div>
+
+        <!-- OVERLAY 6: BOOK READER MODAL -->
+        <div id="bookModal" class="hidden absolute inset-0 bg-cosmicBg z-50 flex flex-col p-4 custom-scroll overflow-y-auto">
+            <div class="flex justify-between items-center pb-3 border-b border-goldBorder/30 mb-3">
+                <h3 class="text-xs font-bold text-goldAccent" id="activeBookTitle">كتاب التاريخ المدرسي - الفصل الأول</h3>
+                <button onclick="toggleModal('bookModal', false)" class="text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div id="bookContentText" class="glass-card rounded-xl p-4 text-xs text-gray-200 leading-relaxed space-y-3 flex-1 overflow-y-auto custom-scroll">
+                <!-- Book content loaded dynamically -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // GLOBAL APP STATE
+        const state = {
+            lang: 'ar',
+            selectedTab: 'home',
+            deepSearch: false,
+            studentName: 'زائر',
+            isLoggedIn: false,
+            callSeconds: 0,
+            callTimer: null,
+            isCallMuted: false,
+            isVideoPlaying: false,
+            quizCurrentIndex: 0,
+            quizScore: 0
+        };
+
+        // QUIZZES, VIDEOS, BOOKS DATA
+        const appData = {
+            quizzes: [
+                {
+                    questionAr: "مؤسس الأسرة الفرعونية الأولى وموحد القطرين عام 3200 ق.م هو الملك:",
+                    questionEn: "The founder of the First Dynasty who unified Upper & Lower Egypt in 3200 BC was King:",
+                    optionsAr: ["خوفو", "أحمس", "مينا (نعرمر)", "تحتمس الثالث"],
+                    optionsEn: ["Khufu", "Ahmose", "Narmer (Mina)", "Thutmose III"],
+                    correct: 2
+                },
+                {
+                    questionAr: "عاصمة مصر في عهد الدولة القديمة والتي بناها الملك مينا هي:",
+                    questionEn: "The capital of Old Kingdom Egypt built by King Narmer was:",
+                    optionsAr: ["طيبة", "منف", "أون", "أواريس"],
+                    optionsEn: ["Thebes", "Memphis", "On", "Avaris"],
+                    correct: 1
+                },
+                {
+                    questionAr: "بُني الهرم الأكبر في الجيزة في عهد الملك:",
+                    questionEn: "The Great Pyramid of Giza was built during the reign of King:",
+                    optionsAr: ["خفرع", "خوفو", "منقزع", "سنفرو"],
+                    optionsEn: ["Khafre", "Khufu", "Menkaure", "Sneferu"],
+                    correct: 1
+                }
+            ],
+            videos: [
+                { titleAr: "الدرس الأول: نشأة الحضارة الفرعونية", titleEn: "Lesson 1: Rise of Pharaonic Civilization", duration: "10:45", views: "12.4K" },
+                { titleAr: "الدرس الثاني: التوحيد والملك مينا", titleEn: "Lesson 2: Unification & King Narmer", duration: "14:20", views: "9.8K" },
+                { titleAr: "الدرس الثالث: عصر بنة الأهرامات", titleEn: "Lesson 3: Era of Pyramid Builders", duration: "18:05", views: "15.1K" }
+            ],
+            books: [
+                { titleAr: "ملخص التاريخ الشامل - Alpha Go", titleEn: "Alpha Go Comprehensive History Summary", pages: "45 صفحة" },
+                { titleAr: "بنك أسئلة الذكاء الاصطناعي", titleEn: "AI Question Bank", pages: "60 صفحة" }
+            ]
+        };
+
+        // INITIALIZATION ON LOAD
+        window.onload = function() {
+            renderDynamicContent();
+        };
+
+        // RENDER ALL DYNAMIC VIEWS BASED ON LANG
+        function renderDynamicContent() {
+            const isAr = state.lang === 'ar';
+
+            // Render Quizzes
+            renderQuiz();
+
+            // Render Videos
+            const videosList = document.getElementById('videoCardsList');
+            videosList.innerHTML = '';
+            appData.videos.forEach((vid) => {
+                videosList.innerHTML += `
+                    <div onclick="openVideoPlayer('${isAr ? vid.titleAr : vid.titleEn}')" class="glass-card rounded-xl p-3 border border-goldBorder/40 flex items-center space-x-3 space-x-reverse cursor-pointer hover:border-goldAccent transition-all shadow-md">
+                        <div class="relative w-20 h-14 bg-cosmicDark rounded-lg border border-goldBorder flex items-center justify-center shrink-0 overflow-hidden">
+                            <i class="fa-solid fa-play text-goldAccent text-lg"></i>
+                            <span class="absolute bottom-1 right-1 bg-black/80 text-[8px] px-1 rounded text-gray-300 font-mono">${vid.duration}</span>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-xs font-bold text-white mb-1 leading-snug">${isAr ? vid.titleAr : vid.titleEn}</h4>
+                            <div class="flex items-center space-x-2 space-x-reverse text-[10px] text-goldGlow">
+                                <span><i class="fa-solid fa-eye text-[9px] ml-1"></i>${vid.views}</span>
+                                <span>•</span>
+                                <span class="bg-goldAccent/20 px-1.5 py-0.5 rounded">${isAr ? 'تفاعلي' : 'Interactive'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Render Library
+            const libraryGrid = document.getElementById('libraryBooksGrid');
+            libraryGrid.innerHTML = '';
+            appData.books.forEach((book) => {
+                libraryGrid.innerHTML += `
+                    <div onclick="openBookReader('${isAr ? book.titleAr : book.titleEn}')" class="glass-card rounded-xl p-3 border border-goldBorder/40 flex flex-col justify-between cursor-pointer hover:border-goldAccent transition-all shadow-md">
+                        <div>
+                            <div class="w-10 h-12 bg-gradient-to-tr from-goldAccent/30 to-purple-800/40 rounded border border-goldAccent flex items-center justify-center mb-2 mx-auto shadow-md">
+                                <i class="fa-solid fa-book-bookmark text-goldAccent text-lg"></i>
+                            </div>
+                            <h4 class="text-xs font-bold text-white text-center leading-tight mb-1">${isAr ? book.titleAr : book.titleEn}</h4>
+                        </div>
+                        <span class="text-[10px] text-center text-goldGlow bg-cosmicLight/60 py-1 rounded-lg border border-goldBorder/20 mt-2">${book.pages}</span>
+                    </div>
+                `;
+            });
+        }
+
+        // LANGUAGE SWITCHER (RTL/LTR Live Toggle)
+        function toggleLanguage() {
+            state.lang = state.lang === 'ar' ? 'en' : 'ar';
+            const isAr = state.lang === 'ar';
+
+            // Root direction
+            document.documentElement.dir = isAr ? 'rtl' : 'ltr';
+            document.documentElement.lang = isAr ? 'ar' : 'en';
+
+            // Update UI Labels
+            document.getElementById('currentLangBtn').innerText = isAr ? 'EN' : 'عربي';
+            document.getElementById('drawerTitle').innerText = isAr ? 'لوحة التحكم' : 'Control Center';
+            document.getElementById('langMenuLabel').innerText = isAr ? 'اللغة / Language' : 'Language / اللغة';
+            document.getElementById('frameToggleText').innerText = isAr ? 'ملء الشاشة' : 'Fullscreen';
+
+            document.getElementById('menuAccount').innerText = isAr ? 'حسابي الشخصي' : 'My Account';
+            document.getElementById('menuCurriculum').innerText = isAr ? 'المنهج الدراسي' : 'Curriculum';
+            document.getElementById('menuAchievements').innerText = isAr ? 'الإنجازات والجوائز' : 'Achievements';
+            document.getElementById('menuContact').innerText = isAr ? 'تواصل معنا' : 'Contact Us';
+            document.getElementById('menuSettings').innerText = isAr ? 'الإعدادات' : 'Settings';
+            document.getElementById('menuLogout').innerText = isAr ? 'تسجيل الخروج' : 'Logout';
+
+            document.getElementById('navLabelHome').innerText = isAr ? 'الرئيسية' : 'Home';
+            document.getElementById('navLabelQuizzes').innerText = isAr ? 'اختبارات' : 'Quizzes';
+            document.getElementById('navLabelVideos').innerText = isAr ? 'فيديوهات' : 'Videos';
+            document.getElementById('navLabelLibrary').innerText = isAr ? 'المكتبة' : 'Library';
+
+            document.getElementById('chatInput').placeholder = isAr ? 'اكتب سؤالك هنا...' : 'Type your question here...';
+
+            renderDynamicContent();
+        }
+
+        // CHAT LOGIC
+        function handleChatKey(e) {
+            if (e.key === 'Enter') {
+                sendUserMessage();
+            }
+        }
+
+        function sendUserMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            // Remove watermark when typing
+            const watermark = document.getElementById('emptyChatWatermark');
+            if (watermark) watermark.remove();
+
+            appendChatMessage('user', text);
+            input.value = '';
+
+            // Simulate AI Response after typing
+            setTimeout(() => {
+                let aiResponse = "";
+                const isAr = state.lang === 'ar';
+
+                if (state.deepSearch) {
+                    aiResponse = isAr ? 
+                        `[نتيجة البحث العميق Alpha Go]: بناءً على المصادر المعتمدة، الإجابة على سؤالك حول (${text}) كالتالي:` :
+                        `[Alpha Go Deep Search Result]: Based on verified sources regarding (${text}):`;
+                } else {
+                    aiResponse = isAr ? 
+                        `إجابة من Alpha Go: سؤالك حول (${text}) تم تحليله بنجاح!` :
+                        `Alpha Go AI Answer: Your question regarding (${text}) was analyzed successfully!`;
+                }
+
+                appendChatMessage('ai', aiResponse);
+            }, 800);
+        }
+
+        function appendChatMessage(sender, text, imgUrl = null) {
+            const feed = document.getElementById('chatFeed');
+            const isUser = sender === 'user';
+            
+            const msgHtml = `
+                <div class="flex items-start space-x-2.5 space-x-reverse ${isUser ? 'mr-auto max-w-[82%]' : 'max-w-[88%]'}">
+                    ${!isUser ? `
+                        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-goldAccent/30 to-purple-800 border border-goldBorder flex items-center justify-center shrink-0 shadow-md">
+                            <i class="fa-solid fa-robot text-sm text-goldAccent"></i>
+                        </div>
+                    ` : ''}
+                    <div class="${isUser ? 'bg-goldAccent text-cosmicBg font-semibold' : 'glass-card border border-goldBorder/40 text-gray-200'} text-xs rounded-2xl ${isUser ? 'rounded-tl-none' : 'rounded-tr-none'} p-3 shadow-md leading-relaxed">
+                        ${imgUrl ? `<img src="${imgUrl}" class="w-full h-32 object-cover rounded-xl mb-2 border border-black/20">` : ''}
+                        ${text}
+                    </div>
+                </div>
+            `;
+            
+            feed.innerHTML += msgHtml;
+            feed.scrollTop = feed.scrollHeight;
+        }
+
+        // PLUS MENU & DEEP RESEARCH
+        function togglePlusMenu() {
+            const menu = document.getElementById('plusMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        function toggleDeepResearch() {
+            state.deepSearch = !state.deepSearch;
+            const dot = document.getElementById('deepSearchToggleDot');
+            const badge = document.getElementById('deepResearchBadge');
+            const isAr = state.lang === 'ar';
+
+            if (state.deepSearch) {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
+                badge.innerText = isAr ? 'بحث عميق نشط' : 'Deep Search Active';
+            } else {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-gray-500";
+                badge.innerText = isAr ? 'محرك Alpha 3.8' : 'Alpha Engine 3.8';
+            }
+
+            togglePlusMenu();
+        }
+
+        function triggerImageAnalysis() {
+            togglePlusMenu();
+            toggleModal('imageAnalysisModal', true);
+        }
+
+        function simulateUploadImage() {
+            toggleModal('imageAnalysisModal', false);
+            const isAr = state.lang === 'ar';
+            appendChatMessage('user', isAr ? 'تم رفع صورة السؤال لتنفيذ تحليل الصور...' : 'Uploaded image for AI visual analysis...', 'd7c4b6de-9c71-4707-8cc6-bff589904b8a.jpeg');
+            
+            setTimeout(() => {
+                appendChatMessage('ai', isAr ? 'نتيجة تحليل الصورة 📷: تم التعرف على شعار Alpha Go والنص الملكي الفرعوني بنجاح!' : 'Image Analysis Result 📷: Alpha Go emblem and Pharaonic royal script recognized successfully!');
+            }, 1200);
+        }
+
+        function toggleVoiceNote() {
+            const isAr = state.lang === 'ar';
+            const micBtn = document.getElementById('micBtn');
+            micBtn.classList.toggle('text-rose-500');
+            
+            appendChatMessage('user', isAr ? '🎙️ [رسالة صوتية مسجلة 0:05]' : '🎙️ [Recorded Voice Note 0:05]');
+            setTimeout(() => {
+                appendChatMessage('ai', isAr ? 'تم استلام الرسالة الصوتية وتحليلها بواسطة Alpha Go AI بنجاح!' : 'Voice note received and analyzed by Alpha Go AI successfully!');
+            }, 1000);
+        }
+
+        // LIVE VOICE CALL SIMULATION
+        function startVoiceCall() {
+            toggleModal('voiceCallModal', true);
+            state.callSeconds = 0;
+            state.callTimer = setInterval(() => {
+                state.callSeconds++;
+                const mins = String(Math.floor(state.callSeconds / 60)).padStart(2, '0');
+                const secs = String(state.callSeconds % 60).padStart(2, '0');
+                document.getElementById('callDuration').innerText = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function endVoiceCall() {
+            clearInterval(state.callTimer);
+            toggleModal('voiceCallModal', false);
+        }
+
+        function toggleCallMute() {
+            state.isCallMuted = !state.isCallMuted;
+            const btn = document.getElementById('callMuteBtn');
+            btn.classList.toggle('bg-rose-600');
+        }
+
+        function toggleCallSpeaker() {
+            const btn = document.getElementById('callSpeakerBtn');
+            btn.classList.toggle('text-goldAccent');
+        }
+
+        // QUIZ LOGIC
+        function renderQuiz() {
+            const isAr = state.lang === 'ar';
+            const quiz = appData.quizzes[state.quizCurrentIndex] || appData.quizzes[0];
+
+            document.getElementById('quizCurrentIndex').innerText = state.quizCurrentIndex + 1;
+            document.getElementById('quizTotalCount').innerText = appData.quizzes.length;
+            document.getElementById('quizScore').innerText = state.quizScore;
+
+            const progress = ((state.quizCurrentIndex + 1) / appData.quizzes.length) * 100;
+            document.getElementById('quizProgressBar').style.width = `${progress}%`;
+
+            document.getElementById('quizQuestionText').innerText = isAr ? quiz.questionAr : quiz.questionEn;
+            document.getElementById('quizFeedbackText').innerText = isAr ? 'اختر الإجابة الصحيحة للتقدم!' : 'Choose the correct answer!';
+
+            const opts = isAr ? quiz.optionsAr : quiz.optionsEn;
+            const container = document.getElementById('quizOptions');
+            container.innerHTML = '';
+
+            opts.forEach((opt, idx) => {
+                container.innerHTML += `
+                    <button onclick="selectQuizAnswer(${idx}, ${quiz.correct})" class="quiz-opt-btn w-full p-3 rounded-xl border border-goldBorder/40 bg-cosmicLight/50 text-xs text-right font-semibold text-gray-200 hover:border-goldAccent transition-all flex justify-between items-center">
+                        <span>${opt}</span>
+                        <i class="fa-regular fa-circle text-gray-500 text-sm"></i>
+                    </button>
+                `;
+            });
+
+            document.getElementById('quizNextBtn').disabled = true;
+        }
+
+        function selectQuizAnswer(selectedIndex, correctIndex) {
+            const isAr = state.lang === 'ar';
+            const buttons = document.querySelectorAll('.quiz-opt-btn');
+            
+            buttons.forEach((btn, idx) => {
+                btn.onclick = null;
+                if (idx === correctIndex) {
+                    btn.className = "quiz-opt-btn w-full p-3 rounded-xl border-2 border-emerald-400 bg-emerald-500/20 text-xs text-right font-bold text-emerald-300 flex justify-between items-center";
+                    btn.innerHTML += `<i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>`;
+                } else if (idx === selectedIndex) {
+                    btn.className = "quiz-opt-btn w-full p-3 rounded-xl border-2 border-rose-500 bg-rose-500/20 text-xs text-right font-bold text-rose-300 flex justify-between items-center";
+                    btn.innerHTML += `<i class="fa-solid fa-circle-xmark text-rose-400 text-sm"></i>`;
+                }
+            });
+
+            if (selectedIndex === correctIndex) {
+                state.quizScore += 100;
+                document.getElementById('quizScore').innerText = state.quizScore;
+                document.getElementById('quizFeedbackText').innerText = isAr ? 'إجابة ممتازة ومضبوطة! 🎉 +100 XP' : 'Excellent answer! 🎉 +100 XP';
+            } else {
+                document.getElementById('quizFeedbackText').innerText = isAr ? 'إجابة غير صحيحة، حاول مجدداً' : 'Incorrect answer, try next question';
+            }
+
+            document.getElementById('quizNextBtn').disabled = false;
+        }
+
+        function nextQuizQuestion() {
+            if (state.quizCurrentIndex < appData.quizzes.length - 1) {
+                state.quizCurrentIndex++;
+                renderQuiz();
+            } else {
+                const isAr = state.lang === 'ar';
+                alert(isAr ? `أحسنت! أكملت الاختبار بنجاح وحصلت على ${state.quizScore} XP` : `Bravo! Completed quiz with ${state.quizScore} XP`);
+                state.quizCurrentIndex = 0;
+                renderQuiz();
+            }
+        }
+
+        // VIDEO & BOOK MODALS
+        function openVideoPlayer(title) {
+            document.getElementById('activeVideoTitle').innerText = title;
+            toggleModal('videoModal', true);
+        }
+
+        function toggleVideoPlay() {
+            state.isVideoPlaying = !state.isVideoPlaying;
+            const btn = document.getElementById('videoPlayBtn');
+            btn.innerHTML = state.isVideoPlaying ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play ml-1"></i>';
+        }
+
+        function openBookReader(title) {
+            document.getElementById('activeBookTitle').innerText = title;
+            document.getElementById('bookContentText').innerHTML = `
+                <h4 class="font-bold text-goldAccent text-sm">${title}</h4>
+                <p><strong>الفصل الأول:</strong> ينقسم التاريخ المصري القديم إلى أسرات حاكمة تبدأ بعصر التأسيس وتوحيد المملكة العليا والسفلى تحت تاج الملك مينا.</p>
+                <p><strong>ملخص الذكاء الاصطناعي Alpha Go:</strong> يُركز هذا الكتاب على المفاهيم والتطورات التاريخية الهامة مع التلخيص الذكي للأسئلة.</p>
+            `;
+            toggleModal('bookModal', true);
+        }
+
+        // USER PROFILE & MODALS
+        function saveUserProfile(e) {
+            e.preventDefault();
+            const val = document.getElementById('studentNameInput').value;
+            if (val) {
+                state.studentName = val;
+                state.isLoggedIn = true;
+                document.getElementById('profileStatusDot').className = "absolute top-0 right-0 w-2.5 h-2.5 bg-emerald-400 rounded-full border border-cosmicBg";
+                toggleModal('loginModal', false);
+                const isAr = state.lang === 'ar';
+                appendChatMessage('ai', isAr ? `مرحباً بك يا طالبنا المتميز (${val})! تم تسجيل دخولك في Alpha Go بنجاح.` : `Welcome distinguished student (${val})! Successfully logged in.`);
+            }
+        }
+
+        function toggleDrawer(show) {
+            const drawer = document.getElementById('drawerOverlay');
+            if (show) drawer.classList.remove('hidden');
+            else drawer.classList.add('hidden');
+        }
+
+        function drawerAction(action) {
+            toggleDrawer(false);
+            const isAr = state.lang === 'ar';
+            if (action === 'logout') {
+                state.isLoggedIn = false;
+                document.getElementById('profileStatusDot').className = "absolute top-0 right-0 w-2.5 h-2.5 bg-gray-500 rounded-full border border-cosmicBg";
+                appendChatMessage('ai', isAr ? 'تم تسجيل الخروج. يمكنك تصفح التطبيق كضيف.' : 'Logged out. Browsing as guest.');
+            } else if (action === 'curriculum') {
+                switchTab('home');
+            } else if (action === 'achievements') {
+                switchTab('quizzes');
+            }
+        }
+
+        function toggleModal(modalId, show) {
+            const modal = document.getElementById(modalId);
+            if (show) modal.classList.remove('hidden');
+            else modal.classList.add('hidden');
+        }
+
+        function toggleDeviceFrame() {
+            const container = document.getElementById('deviceContainer');
+            container.classList.toggle('max-w-[390px]');
+            container.classList.toggle('h-[830px]');
+            container.classList.toggle('rounded-[48px]');
+            container.classList.toggle('border-[10px]');
+            container.classList.toggle('w-full');
+            container.classList.toggle('h-full');
+        }
+    </script>
+</body>
+</html>

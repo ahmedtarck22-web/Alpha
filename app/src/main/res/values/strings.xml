@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">Alpha Go</string>
+    <string name="app_subtitle">جو ألفا • مساعدك التعليمي من الكتب</string>
+    <string name="home_welcome_banner">جو ألفا، أهلاً بك</string>
+    <string name="ask_ramses_placeholder">اسأل جو ألفا من محتوى الكتب... | Ask Go Alpha from books...</string>
+    <string name="voice_call_title">جو ألفا • مكالمة مباشرة</string>
+    <string name="multimodal_prompt">حلل هذه الصورة المرتبطة بالمنهج أو الكتاب بالتفصيل</string>
+    <string name="rag_file_search_section_title">كتب PDF السحابية • Vertex AI / Gemini File Search</string>
+    <string name="rag_upload_five_pdfs_button">رفع وربط كتب PDF (حتى 5 كتب) بـ Cloud Storage و File Search</string>
+    <string name="rag_configure_search_instance">إعدادات ربط محرك البحث (Search Instance)</string>
+    <string name="rag_save_search_config">حفظ إعدادات محرك البحث</string>
+    <string name="citations_books_and_search_ar">المصادر والمراجع:</string>
+    <string name="citations_books_and_search_en">Sources &amp; References:</string>
+    <string name="cloud_rag_hub_title">مكتبة سحابة Firebase المقسمة لمجلدات صغيرة (RAG)</string>
+    <string name="cloud_rag_upload_pdfs_btn">تحويل ورفع كتب PDF تلقائياً لسحابة Firebase (حتى 1000 كتاب)</string>
+    <string name="cloud_rag_zero_apk_badge">0 ميجابايت زيادة في حجم التطبيق • تخزين سحابي ذكي</string>
+    <string name="scroll_to_bottom_desc">النزول إلى آخر المحادثة</string>
+    <string name="live_echo_guard_ar">عزل صدى الصوت نشط • اضغط الزر الذهبي للمقاطعة</string>
+    <string name="live_echo_guard_en">Echo Guard Active • Tap gold button to interrupt</string>
+</resources>
