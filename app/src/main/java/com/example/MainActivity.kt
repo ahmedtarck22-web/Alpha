@@ -98,10 +98,13 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.MessageSender
 import com.example.ui.components.AlphaGoBottomBar
+import com.example.ui.components.AlphaGoGlbStageCard
 import com.example.ui.components.AlphaGoTab
 import com.example.ui.components.ApiKeyManagementDialog
+import com.example.ui.components.AppSettingsDialog
 import com.example.ui.components.AuthSignInDialog
 import com.example.ui.components.ChatMessageBubble
+import com.example.ui.components.ContactUsDialog
 import com.example.ui.components.GeminiLiveVoiceScreen
 import com.example.ui.components.LibraryTabView
 import com.example.ui.components.LiquidGlassBackground
@@ -113,7 +116,7 @@ import com.example.ui.components.RamsesInputBar
 import com.example.ui.components.RiggingStudioDialog
 import com.example.ui.components.SideMenuDrawer
 import com.example.ui.components.VideosTabView
-import com.example.ui.components.isRobolectricRuntime
+import com.example.ui.components.WelcomeJourneyScreen
 import com.example.ui.theme.AmiriFontFamily
 import com.example.ui.theme.CairoFontFamily
 import com.example.ui.theme.CinzelFontFamily
@@ -208,13 +211,14 @@ fun RamsesApp(viewModel: RamsesViewModel) {
     var showApiKeyDialog by remember { mutableStateOf(false) }
     var showRagDialog by remember { mutableStateOf(false) }
     var showModelSelectorDialog by remember { mutableStateOf(false) }
-    var showOpeningSplash by rememberSaveable { mutableStateOf(!isRobolectricRuntime()) }
-
-    LaunchedEffect(showOpeningSplash) {
-        if (showOpeningSplash) {
-            delay(1250L)
-            showOpeningSplash = false
-        }
+    var showContactDialog by remember { mutableStateOf(false) }
+    var showSettingsDialog by remember { mutableStateOf(false) }
+    var showOpeningSplash by rememberSaveable { mutableStateOf(true) }
+    val uiPrefs = remember {
+        context.getSharedPreferences("alpha_go_ui_prefs", android.content.Context.MODE_PRIVATE)
+    }
+    var selectedGrade by rememberSaveable {
+        mutableStateOf(uiPrefs.getString("selected_grade", "") ?: "")
     }
 
     val homeListState = rememberLazyListState()
@@ -379,6 +383,9 @@ fun RamsesApp(viewModel: RamsesViewModel) {
                         isSearchGroundingEnabled = isSearchGroundingEnabled,
                         onToggleSearchGrounding = { viewModel.toggleSearchGrounding() },
                         onOpenAuthDialog = { showAuthDialog = true },
+                        onSignOut = { viewModel.signOut() },
+                        onOpenContactDialog = { showContactDialog = true },
+                        onOpenSettingsDialog = { showSettingsDialog = true },
                         onOpenApiKeyDialog = { showApiKeyDialog = true },
                         onOpenRagDialog = { selectedTab = AlphaGoTab.LIBRARY },
                         onOpen3DArtifactsDialog = {},
@@ -569,18 +576,18 @@ fun RamsesApp(viewModel: RamsesViewModel) {
                             ) {
                                 if (!hasMessages) {
                                     Box(
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentAlignment = Alignment.Center
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(horizontal = 4.dp, vertical = 18.dp),
+                                        contentAlignment = Alignment.TopCenter
                                     ) {
-                                        Image(
-                                            painter = painterResource(id = R.drawable.alpha_go_logo),
-                                            contentDescription = "Alpha Go",
-                                            modifier = Modifier
-                                                .size(132.dp)
-                                                .alpha(0.28f)
-                                                .clip(RoundedCornerShape(28.dp))
-                                                .testTag("alpha_go_home_watermark"),
-                                            contentScale = ContentScale.Crop
+                                        AlphaGoGlbStageCard(
+                                            appLanguage = appLanguage,
+                                            selectedGrade = selectedGrade,
+                                            onSelectGrade = { grade ->
+                                                selectedGrade = grade
+                                                uiPrefs.edit().putString("selected_grade", grade).apply()
+                                            }
                                         )
                                     }
                                 } else {
@@ -740,6 +747,43 @@ fun RamsesApp(viewModel: RamsesViewModel) {
                     onStopSpeaking = { viewModel.stopSpeaking() },
                     onQuickPromptClick = { prompt -> viewModel.sendLiveVoicePrompt(prompt) },
                     onEndCall = { viewModel.endGeminiLiveCall() }
+                )
+            }
+
+            // Contact Us Dialog (from Control Center drawer)
+            if (showContactDialog) {
+                ContactUsDialog(
+                    appLanguage = appLanguage,
+                    onDismiss = { showContactDialog = false }
+                )
+            }
+
+            // App Settings Dialog (from Control Center drawer)
+            if (showSettingsDialog) {
+                AppSettingsDialog(
+                    appLanguage = appLanguage,
+                    hasPersonalApiKey = customApiKey.isNotBlank(),
+                    isSearchGroundingEnabled = isSearchGroundingEnabled,
+                    onToggleLanguage = { viewModel.toggleLanguage() },
+                    onToggleSearchGrounding = { viewModel.toggleSearchGrounding() },
+                    onOpenApiKeyDialog = { showApiKeyDialog = true },
+                    onStartVoiceCall = {
+                        val hasPermission = ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.RECORD_AUDIO
+                        ) == PackageManager.PERMISSION_GRANTED
+                        if (hasPermission) {
+                            viewModel.startGeminiLiveCall()
+                        } else {
+                            geminiLivePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        }
+                    },
+                    onNewChatClick = {
+                        selectedTab = AlphaGoTab.HOME
+                        viewModel.startNewSession()
+                    },
+                    onClearAllChats = { viewModel.clearAllConversations() },
+                    onDismiss = { showSettingsDialog = false }
                 )
             }
 
@@ -989,54 +1033,17 @@ fun RamsesApp(viewModel: RamsesViewModel) {
                 }
             }
 
-            // Full-Screen Cosmic Purple & Gold Alpha Go Opening Splash
+            // Full-Screen Cosmic Purple & Gold Welcome / Start Journey Screen
             AnimatedVisibility(
                 visible = showOpeningSplash,
                 enter = fadeIn(animationSpec = tween(150)),
                 exit = fadeOut(animationSpec = tween(320))
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(CosmicBg, CosmicCard, CosmicBg)
-                            )
-                        )
-                        .testTag("opening_logo_splash"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.alpha_go_logo),
-                            contentDescription = stringResource(R.string.app_name),
-                            modifier = Modifier
-                                .size(220.dp)
-                                .shadow(24.dp, RoundedCornerShape(38.dp), ambientColor = GoldAccent, spotColor = GoldAccent)
-                                .clip(RoundedCornerShape(38.dp))
-                                .border(2.dp, GoldAccent, RoundedCornerShape(38.dp)),
-                            contentScale = ContentScale.Crop
-                        )
-                        Spacer(modifier = Modifier.height(22.dp))
-                        Text(
-                            text = if (appLanguage == AppLanguage.ARABIC) "جو ألفا • Alpha Go" else "Go Alpha • Alpha Go",
-                            fontFamily = CairoFontFamily,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 30.sp,
-                            color = GoldGlow
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = if (appLanguage == AppLanguage.ARABIC) "مساعدك التعليمي الموثق من الكتب" else "Your Book-Grounded Learning Companion",
-                            fontFamily = CairoFontFamily,
-                            fontSize = 13.sp,
-                            color = TextSecondary
-                        )
-                    }
-                }
+                WelcomeJourneyScreen(
+                    appLanguage = appLanguage,
+                    onToggleLanguage = { viewModel.toggleLanguage() },
+                    onStartJourney = { showOpeningSplash = false }
+                )
             }
         }
     }

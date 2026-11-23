@@ -30,10 +30,18 @@ class MainActivityCrashRegressionTest {
 
         composeTestRule.waitForIdle()
 
-        // 1. Go Alpha Header, Clean Watermark Home, Input Bar, and 4-tab Bottom Bar
+        // 0. Welcome / Start Journey Screen appears on launch with interactive Start Journey CTA
+        composeTestRule.onNodeWithTag("opening_logo_splash").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("start_journey_button").assertIsDisplayed().performClick()
+        composeTestRule.waitForIdle()
+
+        // 1. Go Alpha Header, Dedicated GLB Slot, Input Bar, and 4-tab Bottom Bar
         composeTestRule.onNodeWithTag("menu_button").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("header_language_toggle").assertIsDisplayed()
         composeTestRule.onNodeWithTag("header_alpha_go_logo").assertIsDisplayed()
         composeTestRule.onNodeWithTag("profile_button").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("home_glb_slot").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("grade_chip_1").assertIsDisplayed().performClick()
         composeTestRule.onNodeWithTag("alpha_go_home_watermark").assertIsDisplayed()
         assertTrue(
             "Expected welcome + 5 books banner to be removed",
@@ -77,7 +85,7 @@ class MainActivityCrashRegressionTest {
 
         composeTestRule.onNodeWithTag("nav_home").performClick()
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithTag("alpha_go_home_watermark").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("home_glb_slot").assertIsDisplayed()
 
         // 3. Test Go Alpha Live Voice overlay
         composeTestRule.onNodeWithTag("gemini_live_call_button").assertIsDisplayed().performClick()
@@ -87,14 +95,15 @@ class MainActivityCrashRegressionTest {
         composeTestRule.onNodeWithTag("gemini_live_close_button").assertIsDisplayed().performClick()
         composeTestRule.waitForIdle()
 
-        // 4. Open Control Center Drawer and verify RAG, 3D Artifacts, and Ramses 3D mode are removed
+        // 4. Open Control Center Drawer and verify updated IMG_1050 menu items & removed legacy items
         composeTestRule.onNodeWithTag("menu_button").performClick()
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithTag("side_menu_drawer_scroll")
-            .performScrollToNode(hasTestTag("drawer_curriculum_item"))
-        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("drawer_my_account_item").assertIsDisplayed()
         composeTestRule.onNodeWithTag("drawer_curriculum_item").assertIsDisplayed()
         composeTestRule.onNodeWithTag("drawer_achievements_item").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("drawer_contact_item").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("drawer_settings_item").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("drawer_sign_out_item").assertIsDisplayed()
         assertTrue(
             "Expected RAG drawer item to be removed from Control Center",
             composeTestRule.onAllNodesWithTag("drawer_rag_files_item").fetchSemanticsNodes().isEmpty()
