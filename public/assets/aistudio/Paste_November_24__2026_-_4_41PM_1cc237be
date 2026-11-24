@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alpha Go - الواجهة الرئيسية ولوحة التحكم</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Google Fonts: Cairo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #0d071b;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        /* Top Golden Header matching the reference Home Screen UI */
+        .top-gold-arch {
+            background: linear-gradient(180deg, #4b3822 0%, #3d2c1e 60%, #2b1d24 100%);
+            border-bottom: 1.5px solid rgba(255, 209, 138, 0.75);
+            box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5), inset 0 1.5px 10px rgba(255, 232, 185, 0.35), inset 0 -1px 2px rgba(255, 209, 138, 0.45);
+            border-bottom-left-radius: 32px;
+            border-bottom-right-radius: 32px;
+            overflow: hidden;
+        }
+
+        /* Static Glass & Gold Edge Reflection on all Widgets and Frames */
+        .liquid-glass {
+            background: linear-gradient(135deg, rgba(102, 54, 114, 0.42) 0%, rgba(42, 20, 62, 0.62) 100%);
+            backdrop-filter: blur(22px) saturate(155%);
+            -webkit-backdrop-filter: blur(22px) saturate(155%);
+            border: 1.5px solid rgba(255, 209, 138, 0.72);
+            box-shadow: 0 12px 36px rgba(20, 8, 34, 0.58), 0 0 18px rgba(255, 209, 138, 0.16), inset 0 2px 3px rgba(255, 246, 224, 0.48), inset 1.5px 0 2px rgba(255, 234, 195, 0.28), inset 0 -1.5px 3px rgba(255, 209, 138, 0.32);
+            position: relative;
+        }
+        .liquid-glass::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 12%;
+            right: 12%;
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, rgba(255, 250, 235, 0.9), transparent);
+            pointer-events: none;
+        }
+
+        .liquid-glass-pill {
+            background: linear-gradient(145deg, rgba(108, 58, 120, 0.46) 0%, rgba(45, 22, 66, 0.66) 100%);
+            backdrop-filter: blur(24px) saturate(160%);
+            -webkit-backdrop-filter: blur(24px) saturate(160%);
+            border: 1.8px solid rgba(255, 209, 138, 0.85);
+            box-shadow: 0 10px 30px rgba(20, 8, 34, 0.62), 0 0 20px rgba(255, 209, 138, 0.22), inset 0 2px 2.5px rgba(255, 246, 224, 0.5), inset 0 -1.5px 2px rgba(255, 209, 138, 0.35);
+            position: relative;
+        }
+        .liquid-glass-pill::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 16%;
+            right: 16%;
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, rgba(255, 252, 240, 0.92), transparent);
+            pointer-events: none;
+        }
+
+        /* Static Metallic Gold Text Reflection on Key Headings */
+        .gold-text-reflection {
+            background: linear-gradient(115deg, #ffd18a 0%, #ffd18a 38%, #fff8e7 50%, #ffd18a 62%, #e6b05c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 1px 4px rgba(255, 209, 138, 0.25));
+        }
+
+        .pill-active {
+            background: linear-gradient(135deg, rgba(186, 104, 158, 0.42), rgba(76, 36, 92, 0.8));
+            border: 1.5px solid #ffd18a !important;
+            color: #ffd18a !important;
+            box-shadow: 0 0 18px rgba(255, 209, 138, 0.35), inset 0 1.5px 1.5px rgba(255, 246, 225, 0.55);
+        }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(33, 17, 61, 0.3);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 209, 138, 0.35);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 209, 138, 0.65);
+        }
+
+        /* Drawer Slide Animation */
+        .drawer-overlay {
+            transition: opacity 0.35s ease-in-out, visibility 0.35s ease-in-out;
+        }
+        .drawer-panel {
+            transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 0 35px rgba(255, 209, 138, 0.28), 12px 0 30px rgba(0, 0, 0, 0.75);
+        }
+        .drawer-closed {
+            transform: translateX(-105%);
+        }
+        .drawer-open {
+            transform: translateX(0);
+        }
+
+        /* Phone Container Simulation */
+        .phone-frame {
+            width: 390px !important;
+            max-width: 95vw !important;
+            height: 820px !important;
+            max-height: 88vh !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85), 0 0 0 10px #1e152d;
+            border-radius: 46px !important;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Plus Menu Popover Animation */
+        .plus-popover {
+            transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+            transform-origin: bottom left;
+        }
+        .plus-popover-hidden {
+            opacity: 0;
+            transform: translateY(10px) scale(0.92);
+            pointer-events: none;
+        }
+        .plus-popover-visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
+        /* Hieroglyphic Vertical Pillar Styling */
+        .hiero-pillar {
+            font-family: "Segoe UI Historic", "Noto Sans Egyptian Hieroglyphs", serif;
+            text-shadow: 0 0 8px rgba(255, 209, 138, 0.35);
+            letter-spacing: -1px;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col items-center justify-center min-h-screen bg-[#0d071b] text-gray-100 p-2 sm:p-4 selection:bg-[#ffd18a] selection:text-[#21113d]">
+
+    <!-- App Stage Container -->
+    <main id="appStage" class="w-full max-w-5xl h-[90vh] relative rounded-3xl overflow-hidden border-[2px] border-[#ffd18a]/75 bg-gradient-to-b from-[#2f1742] via-[#211033] to-[#150924] shadow-[0_25px_60px_rgba(0,0,0,0.85),0_0_25px_rgba(255,209,138,0.22)] transition-all duration-500 flex flex-col justify-between">
+        
+        <!-- Starry Canvas Background -->
+        <canvas id="mainBgCanvas" class="absolute inset-0 w-full h-full pointer-events-none z-0"></canvas>
+
+        <!-- Top Golden Upper Part (Shortened & Raised with Static Reflection) -->
+        <div class="absolute top-0 inset-x-0 h-[84px] top-gold-arch pointer-events-none z-0">
+            <div class="absolute top-0 inset-x-10 h-[1.5px] bg-gradient-to-r from-transparent via-[#fff5db]/70 to-transparent"></div>
+            <div class="absolute bottom-0 inset-x-8 h-[1.5px] bg-gradient-to-r from-transparent via-[#ffd18a]/90 to-transparent"></div>
+        </div>
+
+        <!-- Left Egyptian Hieroglyphic Side Pillar -->
+        <div class="hiero-pillar absolute inset-y-24 left-1.5 w-7 py-1.5 rounded-full border-r border-[#ffd18a]/25 bg-gradient-to-b from-transparent via-[#ffd18a]/[0.06] to-transparent flex flex-col justify-between items-center text-[#ffd18a]/45 text-[11.5px] leading-[1.05] select-none pointer-events-none z-0 overflow-hidden">
+            <span>𓅃𓇳</span>
+            <span>𓋹𓆓𓋴</span>
+            <span>𓅓𓂧𓏏</span>
+            <span>𓂀𓏤</span>
+            <span>𓀀𓁐𓏥</span>
+            <span>𓃶𓆣</span>
+            <span>𓇓𓏏𓈖</span>
+            <span>𓊹𓄤</span>
+            <span>𓅃𓂧</span>
+            <span>𓋹𓍑𓋴</span>
+            <span>𓆄𓏏</span>
+            <span>𓀠𓇳</span>
+            <span>𓅓𓈖𓍑</span>
+            <span>𓉴𓏤</span>
+            <span>𓆓𓆑</span>
+            <span>𓂀𓋹</span>
+            <span>𓀀𓂧</span>
+            <span>𓃶𓇳</span>
+        </div>
+
+        <!-- Right Egyptian Hieroglyphic Side Pillar -->
+        <div class="hiero-pillar absolute inset-y-24 right-1.5 w-7 py-1.5 rounded-full border-l border-[#ffd18a]/25 bg-gradient-to-b from-transparent via-[#ffd18a]/[0.06] to-transparent flex flex-col justify-between items-center text-[#ffd18a]/45 text-[11.5px] leading-[1.05] select-none pointer-events-none z-0 overflow-hidden">
+            <span>𓋹𓍑𓋴</span>
+            <span>𓇓𓏏𓈖</span>
+            <span>𓅓𓂧𓏏</span>
+            <span>𓅃𓇳</span>
+            <span>𓃶𓏤</span>
+            <span>𓀠𓆣</span>
+            <span>𓂀𓄤</span>
+            <span>𓆄𓏏</span>
+            <span>𓊹𓉴</span>
+            <span>𓀀𓁐𓏥</span>
+            <span>𓂧𓏏</span>
+            <span>𓋹𓆓</span>
+            <span>𓅓𓇳</span>
+            <span>𓅃𓂀</span>
+            <span>𓃶𓈖</span>
+            <span>𓆣𓇳</span>
+            <span>𓀀𓋹</span>
+            <span>𓆓𓏏</span>
+        </div>
+
+        <!-- 1. TOP APP BAR (Single Control Center Icon + Centered App Icon) -->
+        <div dir="ltr" class="relative z-10 w-full px-5 pt-2.5 pb-1 flex items-center justify-between shrink-0">
+            <!-- Left Menu Button (Single Control Center Trigger) -->
+            <button onclick="openDrawer()" aria-label="فتح لوحة التحكم" class="w-10 h-10 rounded-full bg-[#241638]/85 border-[1.5px] border-[#ffd18a]/65 flex items-center justify-center text-[#ffd18a] hover:scale-105 active:scale-95 transition shadow-[0_4px_14px_rgba(0,0,0,0.45),inset_0_1.5px_1.5px_rgba(255,245,220,0.4)]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7h16M4 12h16M4 17h16"></path>
+                </svg>
+            </button>
+
+            <!-- Center Uploaded App Icon Only -->
+            <div class="absolute left-1/2 -translate-x-1/2 top-2 flex items-center justify-center">
+                <img src="249660_2.jpg" alt="App Icon" class="w-14 h-14 rounded-2xl object-cover border-[1.5px] border-[#ffd18a]/85 shrink-0 shadow-[0_6px_18px_rgba(0,0,0,0.6),0_0_14px_rgba(255,209,138,0.4)]">
+            </div>
+
+            <!-- Right User Avatar Button -->
+            <button onclick="openAuthModal()" aria-label="تسجيل الدخول وحسابي" class="w-10 h-10 rounded-full bg-[#241638]/85 border-[1.5px] border-[#ffd18a]/75 flex items-center justify-center text-[#ffd18a] hover:scale-105 active:scale-95 transition shadow-[0_4px_14px_rgba(0,0,0,0.45),inset_0_1.5px_1.5px_rgba(255,245,220,0.4)]">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- 2. MAIN WORKSPACE (TAB VIEWS) -->
+        <div dir="rtl" class="relative z-10 flex-1 overflow-y-auto custom-scrollbar px-7 sm:px-9 pt-6 pb-3 flex flex-col justify-between max-w-3xl w-full mx-auto">
+            
+            <!-- TAB 1: HOME VIEW -->
+            <div id="view-home" class="tab-view flex-1 flex flex-col justify-between">
+                <!-- Hero AI Mascot & Grade Selection Card (Separated clearly below Top Bar) -->
+                <div class="relative mt-2 rounded-[28px] liquid-glass border-[1.8px] border-[#ffd18a]/85 shadow-[0_14px_35px_rgba(0,0,0,0.5),0_0_22px_rgba(255,209,138,0.22)] p-4 sm:p-5">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex-1 text-right pr-1">
+                            <span class="inline-block text-[11px] font-bold text-[#ffd18a] bg-[#ffd18a]/15 border border-[#ffd18a]/50 px-2.5 py-0.5 rounded-full mb-2 shadow-[inset_0_1px_1px_rgba(255,248,220,0.45)]">
+                                مساعدك الذكي للتعلم ✨
+                            </span>
+                            <h2 class="text-base sm:text-xl font-extrabold gold-text-reflection leading-snug">
+                                أهلاً بك! في أي سنة دراسية أنت؟
+                            </h2>
+                        </div>
+
+                        <!-- Explorer Mascot SVG -->
+                        <div class="w-24 h-24 sm:w-28 sm:h-28 shrink-0 relative flex items-center justify-center">
+                            <div class="absolute inset-1 rounded-full bg-[#ffd18a]/15 blur-md"></div>
+                            <svg viewBox="0 0 120 120" class="w-full h-full relative z-10 drop-shadow-lg">
+                                <circle cx="42" cy="52" r="14" fill="#5b21b6"/>
+                                <circle cx="78" cy="52" r="14" fill="#5b21b6"/>
+                                <circle cx="38" cy="64" r="11" fill="#4c1d95"/>
+                                <circle cx="82" cy="64" r="11" fill="#4c1d95"/>
+                                <path d="M36 108 C36 88, 84 88, 84 108 Z" fill="#d4a359"/>
+                                <path d="M47 90 L44 108 M73 90 L76 108" stroke="#581c87" stroke-width="4.5" stroke-linecap="round"/>
+                                <rect x="55" y="95" width="10" height="12" rx="2" fill="#fef3c7" stroke="#b45309" stroke-width="1"/>
+                                <rect x="54" y="76" width="12" height="14" rx="5" fill="#e9b896"/>
+                                <ellipse cx="60" cy="58" rx="20" ry="22" fill="#f3c6a5"/>
+                                <circle cx="43" cy="42" r="9" fill="#6d28d9"/>
+                                <circle cx="54" cy="39" r="9" fill="#7c3aed"/>
+                                <circle cx="67" cy="39" r="9" fill="#6d28d9"/>
+                                <circle cx="77" cy="43" r="8" fill="#5b21b6"/>
+                                <ellipse cx="60" cy="34" rx="30" ry="7" fill="#c8964e" stroke="#fef08a" stroke-width="1"/>
+                                <path d="M42 33 C42 18, 78 18, 78 33 Z" fill="#dfb06a"/>
+                                <polygon points="60,21 55,29 65,29" fill="#fef08a" opacity="0.85"/>
+                                <circle cx="52" cy="58" r="3.2" fill="#2e1065"/>
+                                <circle cx="68" cy="58" r="3.2" fill="#2e1065"/>
+                                <circle cx="53" cy="57" r="1" fill="#ffffff"/>
+                                <circle cx="69" cy="57" r="1" fill="#ffffff"/>
+                                <path d="M54 68 Q60 73 66 68" stroke="#9a3412" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+                                <circle cx="92" cy="82" r="7" fill="#f3c6a5"/>
+                                <path d="M82 95 Q88 90 91 85" stroke="#d4a359" stroke-width="7" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Grade Selection Pills -->
+                    <div class="grid grid-cols-3 gap-2 sm:gap-3 mt-3">
+                        <button onclick="selectGrade(this, 'أولى إعدادي')" class="grade-pill py-2 px-1.5 rounded-full bg-[#482357]/60 backdrop-blur-md border-[1.4px] border-[#ffd18a]/70 text-[#ffd18a] text-xs sm:text-sm font-bold hover:border-[#ffd18a] hover:shadow-[0_0_14px_rgba(255,209,138,0.3)] transition-all shadow-inner">
+                            أولى إعدادي
+                        </button>
+                        <button onclick="selectGrade(this, 'تانية إعدادي')" class="grade-pill py-2 px-1.5 rounded-full bg-[#482357]/60 backdrop-blur-md border-[1.4px] border-[#ffd18a]/70 text-[#ffd18a] text-xs sm:text-sm font-bold hover:border-[#ffd18a] hover:shadow-[0_0_14px_rgba(255,209,138,0.3)] transition-all shadow-inner">
+                            تانية إعدادي
+                        </button>
+                        <button onclick="selectGrade(this, 'تالتة إعدادي')" class="grade-pill py-2 px-1.5 rounded-full bg-[#482357]/60 backdrop-blur-md border-[1.4px] border-[#ffd18a]/70 text-[#ffd18a] text-xs sm:text-sm font-bold hover:border-[#ffd18a] hover:shadow-[0_0_14px_rgba(255,209,138,0.3)] transition-all shadow-inner">
+                            تالتة إعدادي
+                        </button>
+                    </div>
+
+                    <p id="selectedGradeHint" class="text-center text-xs text-[#ffd18a]/85 mt-2.5 font-medium">
+                        سيتم عرض منهجك المختار
+                    </p>
+                </div>
+
+                <!-- Interactive Chat Feed -->
+                <div id="chatFeed" class="my-2 px-1 flex-1 flex flex-col justify-end space-y-2 min-h-[50px]"></div>
+
+                <!-- Bottom Extended One-Piece Liquid Glass Input Widget -->
+                <div class="relative pt-1 w-full">
+                    <!-- Popover Menu Inside Plus (+) Button -->
+                    <div id="plusMenuPopover" class="plus-popover plus-popover-hidden absolute bottom-16 left-1 z-30 flex flex-col gap-2 liquid-glass border-[1.5px] border-[#ffd18a]/80 rounded-2xl px-4 py-3 min-w-[180px]">
+                        <button onclick="triggerQuickTool('تحليل الصور')" class="flex items-center gap-2.5 text-xs sm:text-sm font-semibold text-[#ffd18a] hover:brightness-110 transition text-right py-0.5">
+                            <svg class="w-4 h-4 text-[#ffd18a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                <circle cx="12" cy="13" r="3" stroke-width="2"></circle>
+                            </svg>
+                            <span>تحليل الصور</span>
+                        </button>
+                        <div class="h-px bg-[#ffd18a]/35 w-full"></div>
+                        <button onclick="triggerQuickTool('البحث العميق')" class="flex items-center gap-2.5 text-xs sm:text-sm font-semibold text-[#ffd18a] hover:brightness-110 transition text-right py-0.5">
+                            <svg class="w-4 h-4 text-[#ffd18a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            <span>البحث العميق</span>
+                        </button>
+                    </div>
+
+                    <!-- Unified Wide Liquid Glass Pill -->
+                    <div class="w-full flex items-center liquid-glass-pill rounded-full px-2.5 py-2 focus-within:border-[#ffd18a] focus-within:shadow-[0_0_24px_rgba(255,209,138,0.35)] transition">
+                        <!-- Call Button -->
+                        <button onclick="showToast('جاري بدء مكالمة صوتية ذكية...')" aria-label="مكالمة" class="w-10 h-10 rounded-full bg-[#562963]/65 border-[1.5px] border-[#ffd18a]/80 flex items-center justify-center text-[#ffd18a] hover:bg-[#6b347a]/80 hover:scale-105 active:scale-95 transition shrink-0 shadow-[0_0_12px_rgba(255,209,138,0.28),inset_0_1px_1px_rgba(255,240,210,0.3)]">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                            </svg>
+                        </button>
+
+                        <div class="h-5 w-px bg-[#ffd18a]/40 mx-2"></div>
+
+                        <!-- Mic Button -->
+                        <button onclick="showToast('تحدث الآن...')" aria-label="تسجيل صوتي" class="w-9 h-9 rounded-full bg-[#562963]/45 border border-[#ffd18a]/60 flex items-center justify-center text-[#ffd18a] hover:scale-105 transition shrink-0 shadow-[0_0_10px_rgba(255,209,138,0.2)]">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                            </svg>
+                        </button>
+
+                        <!-- Text Input -->
+                        <input id="promptInput" type="text" placeholder="اكتب هنا..." onkeydown="if(event.key==='Enter') sendPrompt()" class="w-full bg-transparent text-sm font-semibold text-[#ffd18a] placeholder-[#ffd18a]/75 focus:outline-none py-1.5 px-2.5">
+
+                        <div class="h-5 w-px bg-[#ffd18a]/40 mx-1.5"></div>
+
+                        <!-- Integrated Plus (+) Button -->
+                        <button id="plusToggleBtn" onclick="togglePlusMenu()" aria-label="أدوات إضافية" class="w-10 h-10 rounded-full bg-gradient-to-b from-[#b8659b]/40 to-[#4f245e]/75 border-[1.5px] border-[#ffd18a]/85 flex items-center justify-center text-[#ffd18a] hover:scale-105 active:scale-95 transition shrink-0 shadow-[0_0_14px_rgba(255,209,138,0.32),inset_0_1px_1.5px_rgba(255,240,210,0.38)]">
+                            <svg id="plusIconSvg" class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: QUIZZES VIEW -->
+            <div id="view-quizzes" class="tab-view hidden flex-1 flex-col gap-3 py-2">
+                <div class="flex items-center justify-between liquid-glass rounded-2xl p-4">
+                    <div>
+                        <h3 class="text-base sm:text-lg font-extrabold gold-text-reflection">الاختبارات التفاعلية</h3>
+                        <p class="text-xs text-[#ffe3b0]/75 mt-0.5">اختبر مستواك واكسب نقاطاً تضاف لإنجازاتك</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full bg-[#ffd18a]/15 border border-[#ffd18a]/40 text-xs font-bold text-[#ffd18a]">🏆 1,250 نقطة</span>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="p-4 rounded-2xl liquid-glass flex items-center justify-between gap-2">
+                        <div>
+                            <span class="text-[11px] text-[#ffd18a] font-bold">الدراسات الاجتماعية • الوحدة الأولى</span>
+                            <h4 class="text-sm sm:text-base font-bold text-[#fff2d6] mt-0.5">حضارة مصر القديمة والكتابة الهيروغليفية</h4>
+                            <p class="text-xs text-[#ffe3b0]/65 mt-1">10 أسئلة • 15 دقيقة</p>
+                        </div>
+                        <button onclick="showToast('تم بدء اختبار الحضارة المصرية!')" class="px-4 py-2 rounded-full bg-gradient-to-r from-[#ffd18a] to-[#ffe3b0] text-[#1a0c33] text-xs font-extrabold hover:brightness-110 transition shrink-0">ابدأ</button>
+                    </div>
+
+                    <div class="p-4 rounded-2xl liquid-glass flex items-center justify-between gap-2">
+                        <div>
+                            <span class="text-[11px] text-[#ffd18a] font-bold">العلوم • المراجعة الشاملة</span>
+                            <h4 class="text-sm sm:text-base font-bold text-[#fff2d6] mt-0.5">المادة وخواصها والتركيب الذري</h4>
+                            <p class="text-xs text-[#ffe3b0]/65 mt-1">15 سؤال • 20 دقيقة</p>
+                        </div>
+                        <button onclick="showToast('تم بدء اختبار العلوم!')" class="px-4 py-2 rounded-full bg-gradient-to-r from-[#ffd18a] to-[#ffe3b0] text-[#1a0c33] text-xs font-extrabold hover:brightness-110 transition shrink-0">ابدأ</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: VIDEOS VIEW -->
+            <div id="view-videos" class="tab-view hidden flex-1 flex-col gap-3 py-2">
+                <div class="liquid-glass rounded-2xl p-4">
+                    <h3 class="text-base sm:text-lg font-extrabold gold-text-reflection">فيديوهات الشرح ثلاثية الأبعاد</h3>
+                    <p class="text-xs text-[#ffe3b0]/75 mt-0.5">دروس مرئية مدعومة بالواقع المختلط (Mixed Reality)</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div onclick="showToast('جاري تشغيل درس: أسرار الأهرامات 3D')" class="cursor-pointer rounded-2xl liquid-glass p-3.5 hover:border-[#ffd18a] transition group">
+                        <div class="h-24 rounded-xl bg-gradient-to-br from-[#4d2b7a]/60 to-[#190d2e]/80 flex items-center justify-center relative overflow-hidden mb-2.5 border border-[#ffd18a]/20">
+                            <span class="text-3xl opacity-30">𓉴</span>
+                            <div class="w-10 h-10 rounded-full bg-[#ffd18a] text-[#1a0c33] flex items-center justify-center shadow-lg group-hover:scale-110 transition">▶</div>
+                        </div>
+                        <h4 class="text-sm font-bold text-[#fff2d6]">جولة داخل المعابد الفرعونية</h4>
+                        <span class="text-[11px] text-[#ffe3b0]/65">12:40 دقيقة • عرض تفاعلي</span>
+                    </div>
+
+                    <div onclick="showToast('جاري تشغيل درس: المجموعة الشمسية')" class="cursor-pointer rounded-2xl liquid-glass p-3.5 hover:border-[#ffd18a] transition group">
+                        <div class="h-24 rounded-xl bg-gradient-to-br from-[#4d2b7a]/60 to-[#190d2e]/80 flex items-center justify-center relative overflow-hidden mb-2.5 border border-[#ffd18a]/20">
+                            <span class="text-3xl opacity-30">🪐</span>
+                            <div class="w-10 h-10 rounded-full bg-[#ffd18a] text-[#1a0c33] flex items-center justify-center shadow-lg group-hover:scale-110 transition">▶</div>
+                        </div>
+                        <h4 class="text-sm font-bold text-[#fff2d6]">رحلة في الفضاء والكواكب</h4>
+                        <span class="text-[11px] text-[#ffe3b0]/65">09:15 دقيقة • واقع معزز</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: LIBRARY VIEW -->
+            <div id="view-library" class="tab-view hidden flex-1 flex-col gap-3 py-2">
+                <div class="flex items-center justify-between liquid-glass rounded-2xl p-4">
+                    <div>
+                        <h3 class="text-base sm:text-lg font-extrabold gold-text-reflection">المكتبة والمنهج الدراسي</h3>
+                        <p id="libraryGradeSubtitle" class="text-xs text-[#ffe3b0]/75 mt-0.5">الكتب والملخصات المعتمدة لمنهجك</p>
+                    </div>
+                    <button onclick="openDrawer()" class="text-xs font-bold text-[#ffd18a] underline shrink-0">لوحة التحكم</button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div onclick="showToast('فتح كتاب: اللغة العربية')" class="cursor-pointer p-3.5 rounded-2xl liquid-glass hover:border-[#ffd18a] transition">
+                        <div class="w-9 h-9 rounded-xl bg-[#ffd18a]/15 text-[#ffd18a] flex items-center justify-center font-bold mb-2">📖</div>
+                        <h4 class="text-sm font-bold text-[#fff2d6]">اللغة العربية</h4>
+                        <p class="text-[11px] text-[#ffe3b0]/65 mt-0.5">الفصل الدراسي الأول • PDF</p>
+                    </div>
+                    <div onclick="showToast('فتح كتاب: الدراسات الاجتماعية')" class="cursor-pointer p-3.5 rounded-2xl liquid-glass hover:border-[#ffd18a] transition">
+                        <div class="w-9 h-9 rounded-xl bg-[#ffd18a]/15 text-[#ffd18a] flex items-center justify-center font-bold mb-2">🏛️</div>
+                        <h4 class="text-sm font-bold text-[#fff2d6]">الدراسات الاجتماعية</h4>
+                        <p class="text-[11px] text-[#ffe3b0]/65 mt-0.5">ملخص الخرائط والتاريخ</p>
+                    </div>
+                    <div onclick="showToast('فتح كتاب: العلوم المتكاملة')" class="cursor-pointer p-3.5 rounded-2xl liquid-glass hover:border-[#ffd18a] transition">
+                        <div class="w-9 h-9 rounded-xl bg-[#ffd18a]/15 text-[#ffd18a] flex items-center justify-center font-bold mb-2">🧪</div>
+                        <h4 class="text-sm font-bold text-[#fff2d6]">العلوم</h4>
+                        <p class="text-[11px] text-[#ffe3b0]/65 mt-0.5">التجارب المعملية المصورة</p>
+                    </div>
+                    <div onclick="showToast('فتح كتاب: الرياضيات')" class="cursor-pointer p-3.5 rounded-2xl liquid-glass hover:border-[#ffd18a] transition">
+                        <div class="w-9 h-9 rounded-xl bg-[#ffd18a]/15 text-[#ffd18a] flex items-center justify-center font-bold mb-2">📐</div>
+                        <h4 class="text-sm font-bold text-[#fff2d6]">الرياضيات</h4>
+                        <p class="text-[11px] text-[#ffe3b0]/65 mt-0.5">الجبر والهندسة التفاعلية</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 3. BOTTOM NAVIGATION BAR -->
+        <nav dir="rtl" class="relative z-10 w-full bg-gradient-to-t from-[#341845]/90 to-[#210f30]/75 backdrop-blur-2xl border-t-[1.5px] border-[#ffd18a]/65 px-4 py-2 flex items-center justify-around shrink-0 shadow-[0_-6px_26px_rgba(255,209,138,0.16)]">
+            <button data-tab="home" onclick="switchTab('home', 'الرئيسية')" class="nav-tab flex flex-col items-center gap-0.5 text-[#ffd18a] transition">
+                <div class="p-1.5 rounded-xl bg-[#ffd18a]/15 border border-[#ffd18a]/50 shadow-[0_0_12px_rgba(255,209,138,0.35)]">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/>
+                    </svg>
+                </div>
+                <span class="text-[11px] font-bold text-[#ffd18a]">الرئيسية</span>
+            </button>
+
+            <button data-tab="quizzes" onclick="switchTab('quizzes', 'اختبارات')" class="nav-tab flex flex-col items-center gap-0.5 text-[#ffd18a]/85 hover:text-[#ffd18a] transition">
+                <div class="p-1.5 rounded-xl border border-transparent">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                    </svg>
+                </div>
+                <span class="text-[11px] font-bold text-[#ffd18a]">اختبارات</span>
+            </button>
+
+            <button data-tab="videos" onclick="switchTab('videos', 'فيديوهات')" class="nav-tab flex flex-col items-center gap-0.5 text-[#ffd18a]/85 hover:text-[#ffd18a] transition">
+                <div class="p-1.5 rounded-xl border border-transparent">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <rect x="3" y="5" width="18" height="14" rx="3" stroke-width="1.9"></rect>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M10 9l5 3-5 3V9z"></path>
+                    </svg>
+                </div>
+                <span class="text-[11px] font-bold text-[#ffd18a]">فيديوهات</span>
+            </button>
+
+            <button data-tab="library" onclick="switchTab('library', 'المكتبة')" class="nav-tab flex flex-col items-center gap-0.5 text-[#ffd18a]/85 hover:text-[#ffd18a] transition">
+                <div class="p-1.5 rounded-xl border border-transparent">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                </div>
+                <span class="text-[11px] font-bold text-[#ffd18a]">المكتبة</span>
+            </button>
+        </nav>
+
+        <!-- Toast Notification Popup -->
+        <div id="toast" class="absolute top-20 left-1/2 -translate-x-1/2 bg-[#2c1549]/95 text-[#ffe3b0] border border-[#ffd18a]/50 px-5 py-2 rounded-full text-xs sm:text-sm font-semibold shadow-2xl backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300 z-50 flex items-center gap-2 whitespace-nowrap">
+            <span class="w-2 h-2 rounded-full bg-[#ffd18a]"></span>
+            <span id="toastMessage">تم الضغط</span>
+        </div>
+
+        <!-- 4. CONTROL CENTER DRAWER OVERLAY (Language removed as requested) -->
+        <div id="drawerOverlay" dir="ltr" class="drawer-overlay absolute inset-0 bg-black/55 backdrop-blur-[2px] z-40 opacity-0 pointer-events-none" onclick="dismissDrawer()">
+            <aside id="drawerPanel" onclick="event.stopPropagation()" class="drawer-panel drawer-closed h-full w-[82%] max-w-[330px] rounded-r-[40px] bg-gradient-to-b from-[#331845] via-[#241036] to-[#170a26] border-r-[2.2px] border-y-[2.2px] border-[#ffd18a] shadow-[0_0_32px_rgba(255,209,138,0.38),inset_-2px_0_12px_rgba(255,209,138,0.22)] relative overflow-hidden flex flex-col">
+                
+                <!-- Drawer Starry Canvas -->
+                <canvas id="drawerBgCanvas" class="absolute inset-0 w-full h-full pointer-events-none z-0"></canvas>
+
+                <!-- RTL Drawer Inner Content -->
+                <div dir="rtl" class="relative z-10 flex-1 flex flex-col px-5 pt-6 pb-4 overflow-hidden">
+                    <!-- Drawer Header -->
+                    <div class="flex items-center justify-between mb-6 pb-3 border-b border-[#ffd18a]/35">
+                        <h2 id="drawerTitleText" class="text-2xl font-extrabold gold-text-reflection">لوحة التحكم</h2>
+                        <button onclick="dismissDrawer()" aria-label="إغلاق" class="w-11 h-11 rounded-full bg-[#452157] border-[1.6px] border-[#ffd18a]/85 flex items-center justify-center text-[#ffd18a] hover:bg-[#572a6e] shadow-[0_0_14px_rgba(255,209,138,0.3),inset_0_1.5px_1.5px_rgba(255,245,220,0.45)] transition">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Menu Items List -->
+                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-5 pl-1">
+                        <!-- حسابي -->
+                        <button onclick="handleItemClick('account')" class="w-full flex items-center gap-3.5 text-right group py-1">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-b from-[#49305f] to-[#2b1948] border-[1.5px] border-[#ffd18a]/80 flex items-center justify-center text-[#ffd18a] shadow-[0_0_14px_rgba(255,209,138,0.25)] group-hover:scale-105 transition shrink-0">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+                            </div>
+                            <span class="flex-1 text-base font-bold text-[#ffe3b0] group-hover:text-[#ffd18a] transition">حسابي</span>
+                        </button>
+
+                        <!-- المنهج الدراسي -->
+                        <button onclick="handleItemClick('curriculum')" class="w-full flex items-center gap-3.5 text-right group py-1">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-b from-[#49305f] to-[#2b1948] border-[1.5px] border-[#ffd18a]/80 flex items-center justify-center text-[#ffd18a] shadow-[0_0_14px_rgba(255,209,138,0.25)] group-hover:scale-105 transition shrink-0">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
+                            </div>
+                            <span class="flex-1 text-base font-bold text-[#ffe3b0] group-hover:text-[#ffd18a] transition">المنهج الدراسي</span>
+                        </button>
+
+                        <!-- الإنجازات والجوائز -->
+                        <button onclick="handleItemClick('achievements')" class="w-full flex items-center gap-3.5 text-right group py-1">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-b from-[#49305f] to-[#2b1948] border-[1.5px] border-[#ffd18a]/80 flex items-center justify-center text-[#ffd18a] shadow-[0_0_14px_rgba(255,209,138,0.25)] group-hover:scale-105 transition shrink-0">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/></svg>
+                            </div>
+                            <span class="flex-1 text-base font-bold text-[#ffe3b0] group-hover:text-[#ffd18a] transition">الإنجازات والجوائز</span>
+                        </button>
+
+                        <!-- اللغة (Globe Icon + Segmented Toggle) -->
+                        <div class="w-full flex items-center gap-3.5 text-right group py-1">
+                            <div onclick="toggleLanguage()" class="cursor-pointer w-12 h-12 rounded-full bg-gradient-to-b from-[#49305f] to-[#2b1948] border-[1.5px] border-[#ffd18a]/80 flex items-center justify-center text-[#ffd18a] shadow-[0_0_14px_rgba(255,209,138,0.25)] group-hover:scale-105 transition shrink-0">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="9" stroke-width="1.8"></circle>
+                                    <ellipse cx="12" cy="12" rx="4.2" ry="9" stroke-width="1.6"></ellipse>
+                                    <path stroke-linecap="round" stroke-width="1.6" d="M3.5 9h17M3.5 15h17"></path>
+                                </svg>
+                            </div>
+                            <span onclick="toggleLanguage()" class="cursor-pointer flex-1 text-base font-bold text-[#ffe3b0] group-hover:text-[#ffd18a] transition">اللغة</span>
+                            <!-- Segmented Language Toggle -->
+                            <button onclick="toggleLanguage()" dir="ltr" class="relative w-24 h-8 rounded-full bg-[#241238] border-[1.4px] border-[#ffd18a]/80 p-0.5 flex items-center justify-between shadow-inner">
+                                <span id="langThumb" class="absolute top-0.5 left-0.5 w-[44px] h-[26px] rounded-full bg-gradient-to-r from-[#ffd18a] to-[#ffe3b0] transition-transform duration-300 shadow"></span>
+                                <span id="langEnLabel" class="relative z-10 w-1/2 text-center text-[11px] font-extrabold text-[#1a0c33] transition-colors">EN</span>
+                                <span id="langArLabel" class="relative z-10 w-1/2 text-center text-[11px] font-extrabold text-[#ffd18a] transition-colors">عربي</span>
+                            </button>
+                        </div>
+
+                        <!-- تواصل معنا -->
+                        <button onclick="handleItemClick('contact')" class="w-full flex items-center gap-3.5 text-right group py-1">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-b from-[#49305f] to-[#2b1948] border-[1.5px] border-[#ffd18a]/80 flex items-center justify-center text-[#ffd18a] shadow-[0_0_14px_rgba(255,209,138,0.25)] group-hover:scale-105 transition shrink-0">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+                            </div>
+                            <span class="flex-1 text-base font-bold text-[#ffe3b0] group-hover:text-[#ffd18a] transition">تواصل معنا</span>
+                        </button>
+
+                        <!-- الإعدادات -->
+                        <button onclick="handleItemClick('settings')" class="w-full flex items-center gap-3.5 text-right group py-1">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-b from-[#49305f] to-[#2b1948] border-[1.5px] border-[#ffd18a]/80 flex items-center justify-center text-[#ffd18a] shadow-[0_0_14px_rgba(255,209,138,0.25)] group-hover:scale-105 transition shrink-0">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                            </div>
+                            <span class="flex-1 text-base font-bold text-[#ffe3b0] group-hover:text-[#ffd18a] transition">الإعدادات</span>
+                        </button>
+                    </div>
+
+                    <!-- Logout at Bottom -->
+                    <button onclick="handleItemClick('logout')" class="w-full flex items-center gap-3.5 text-right group pt-3 mt-2 border-t border-[#ffd18a]/40">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-b from-[#49305f] to-[#2b1948] border-[1.5px] border-[#ffd18a]/80 flex items-center justify-center text-[#ffd18a] shadow-[0_0_14px_rgba(255,209,138,0.25)] group-hover:scale-105 transition shrink-0">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+                        </div>
+                        <span class="flex-1 text-base font-bold text-[#ffe3b0] group-hover:text-[#ffd18a] transition">تسجيل الخروج</span>
+                    </button>
+                </div>
+            </aside>
+        </div>
+
+        <!-- 5. LOGIN & ACCOUNT LIQUID GLASS MODAL -->
+        <div id="authModal" dir="rtl" onclick="closeAuthModal()" class="absolute inset-0 bg-black/65 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+            <div onclick="event.stopPropagation()" class="w-full max-w-[340px] rounded-[32px] liquid-glass p-5 border-[1.8px] border-[#ffd18a]/85 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_28px_rgba(255,209,138,0.28)] relative overflow-hidden">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl text-[#ffd18a]">𓅃</span>
+                        <h3 class="text-lg font-extrabold gold-text-reflection">تسجيل الدخول - Alpha Go</h3>
+                    </div>
+                    <button onclick="closeAuthModal()" aria-label="إغلاق" class="w-8 h-8 rounded-full bg-[#392252]/85 border border-[#ffd18a]/65 flex items-center justify-center text-[#ffd18a] hover:bg-[#4c2e6e] transition">
+                        ✕
+                    </button>
+                </div>
+
+                <!-- Student Status Badge -->
+                <div id="loggedInStatusBox" class="hidden mb-4 p-3 rounded-2xl bg-[#ffd18a]/15 border border-[#ffd18a]/65 text-center">
+                    <p class="text-xs text-[#ffd18a]/90">مرحباً بك يا بطل:</p>
+                    <p id="currentStudentName" class="text-sm font-extrabold text-[#ffd18a] mt-0.5">أحمد محمد</p>
+                </div>
+
+                <!-- Login Form Widget -->
+                <form id="loginForm" onsubmit="submitLogin(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-[#ffd18a] mb-1">اسم الطالب أو البريد الإلكتروني</label>
+                        <input id="loginUsername" type="text" required placeholder="أدخل اسمك أو بريدك..." class="w-full rounded-2xl bg-[#1a0e2e]/75 border-[1.4px] border-[#ffd18a]/65 px-3.5 py-2.5 text-xs sm:text-sm text-[#ffd18a] placeholder-[#ffd18a]/55 focus:outline-none focus:border-[#ffd18a] shadow-[0_0_12px_rgba(255,209,138,0.12)]">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-[#ffd18a] mb-1">كلمة المرور</label>
+                        <input id="loginPassword" type="password" required placeholder="••••••••" class="w-full rounded-2xl bg-[#1a0e2e]/75 border-[1.4px] border-[#ffd18a]/65 px-3.5 py-2.5 text-xs sm:text-sm text-[#ffd18a] placeholder-[#ffd18a]/55 focus:outline-none focus:border-[#ffd18a] shadow-[0_0_12px_rgba(255,209,138,0.12)]">
+                    </div>
+                    <button type="submit" class="w-full py-2.5 mt-1 rounded-full bg-gradient-to-r from-[#ffd18a] to-[#ffe3b0] border border-[#fff2d6] text-[#1a0c33] text-sm font-extrabold hover:brightness-110 shadow-[0_0_18px_rgba(255,209,138,0.35)] transition">
+                        دخول إلى حسابي ✨
+                    </button>
+                </form>
+
+                <!-- Quick Guest / Logout Actions -->
+                <div class="mt-3 pt-3 border-t border-[#ffd18a]/35 flex items-center justify-between text-xs">
+                    <button type="button" onclick="quickDemoLogin()" class="text-[#ffd18a] font-bold hover:underline">دخول تجريبي سريع</button>
+                    <button type="button" onclick="performLogout()" class="text-[#ffd18a]/80 font-semibold hover:text-[#ffd18a] hover:underline">تسجيل الخروج</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        let isPhoneMode = false;
+        let isPlusMenuOpen = false;
+        let currentLang = 'EN';
+        let toastTimeout = null;
+
+        const appStage = document.getElementById('appStage');
+        const viewModeText = document.getElementById('viewModeText');
+        const drawerOverlay = document.getElementById('drawerOverlay');
+        const drawerPanel = document.getElementById('drawerPanel');
+
+        function showToast(text) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            toastMessage.innerText = text;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2400);
+        }
+
+        function openDrawer() {
+            drawerOverlay.classList.remove('opacity-0', 'pointer-events-none');
+            drawerOverlay.classList.add('opacity-100');
+            drawerPanel.classList.remove('drawer-closed');
+            drawerPanel.classList.add('drawer-open');
+            resizeDrawerCanvas();
+        }
+
+        function dismissDrawer() {
+            drawerPanel.classList.remove('drawer-open');
+            drawerPanel.classList.add('drawer-closed');
+            drawerOverlay.classList.remove('opacity-100');
+            drawerOverlay.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function toggleViewMode() {
+            isPhoneMode = !isPhoneMode;
+            if (isPhoneMode) {
+                appStage.classList.remove('max-w-5xl', 'h-[84vh]', 'rounded-3xl');
+                appStage.classList.add('phone-frame');
+                viewModeText.innerText = 'التحويل للمعاينة الكاملة';
+            } else {
+                appStage.classList.remove('phone-frame');
+                appStage.classList.add('max-w-5xl', 'h-[84vh]', 'rounded-3xl');
+                viewModeText.innerText = 'التحويل لشاشة جوال';
+            }
+            setTimeout(() => {
+                resizeMainCanvas();
+                resizeDrawerCanvas();
+            }, 350);
+        }
+
+        function togglePlusMenu() {
+            isPlusMenuOpen = !isPlusMenuOpen;
+            const popover = document.getElementById('plusMenuPopover');
+            const plusSvg = document.getElementById('plusIconSvg');
+            if (isPlusMenuOpen) {
+                popover.classList.remove('plus-popover-hidden');
+                popover.classList.add('plus-popover-visible');
+                plusSvg.classList.add('rotate-45');
+            } else {
+                popover.classList.remove('plus-popover-visible');
+                popover.classList.add('plus-popover-hidden');
+                plusSvg.classList.remove('rotate-45');
+            }
+        }
+
+        function selectGrade(btn, gradeName) {
+            document.querySelectorAll('.grade-pill').forEach(el => el.classList.remove('pill-active'));
+            btn.classList.add('pill-active');
+            document.getElementById('selectedGradeHint').innerHTML = `تم اختيار منهج: <span class="text-[#ffd18a] font-bold">${gradeName}</span> ✅`;
+            const libSub = document.getElementById('libraryGradeSubtitle');
+            if (libSub) libSub.innerText = `الكتب والملخصات المعتمدة لـ (${gradeName})`;
+            showToast(`تم تفعيل منهج ${gradeName}`);
+        }
+
+        function triggerQuickTool(toolName) {
+            if (isPlusMenuOpen) togglePlusMenu();
+            const input = document.getElementById('promptInput');
+            input.placeholder = `اكتب سؤالك لـ (${toolName})...`;
+            input.focus();
+            showToast(`تم تفعيل وضع: ${toolName}`);
+        }
+
+        function sendPrompt() {
+            const input = document.getElementById('promptInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const feed = document.getElementById('chatFeed');
+            const userBubble = document.createElement('div');
+            userBubble.className = 'self-start bg-[#3a225d]/90 border border-[#ffd18a]/30 text-[#fff3d6] text-xs sm:text-sm px-4 py-2 rounded-2xl rounded-tr-sm max-w-[80%] shadow';
+            userBubble.innerText = text;
+            feed.appendChild(userBubble);
+
+            input.value = '';
+
+            setTimeout(() => {
+                const aiBubble = document.createElement('div');
+                aiBubble.className = 'self-end bg-[#221238]/95 border border-[#ffd18a]/45 text-[#ffd18a] text-xs sm:text-sm px-4 py-2 rounded-2xl rounded-tl-sm max-w-[85%] shadow';
+                aiBubble.innerText = `أهلاً بك! جاري تجهيز شرح مبسط حول "${text}" ✨`;
+                feed.appendChild(aiBubble);
+            }, 400);
+        }
+
+        function switchTab(tabKey, tabLabel) {
+            document.querySelectorAll('.tab-view').forEach(view => {
+                view.classList.add('hidden');
+                view.classList.remove('flex');
+            });
+            const activeView = document.getElementById(`view-${tabKey}`);
+            if (activeView) {
+                activeView.classList.remove('hidden');
+                activeView.classList.add('flex');
+            }
+            if (tabLabel) showToast(`القسم: ${tabLabel}`);
+        }
+
+        function toggleLanguage() {
+            const thumb = document.getElementById('langThumb');
+            const enLabel = document.getElementById('langEnLabel');
+            const arLabel = document.getElementById('langArLabel');
+            if (currentLang === 'EN') {
+                currentLang = 'AR';
+                thumb.style.transform = 'translateX(44px)';
+                enLabel.classList.replace('text-[#1a0c33]', 'text-[#ffd18a]');
+                arLabel.classList.replace('text-[#ffd18a]', 'text-[#1a0c33]');
+                showToast('تم تغيير اللغة إلى: العربية');
+            } else {
+                currentLang = 'EN';
+                thumb.style.transform = 'translateX(0px)';
+                arLabel.classList.replace('text-[#1a0c33]', 'text-[#ffd18a]');
+                enLabel.classList.replace('text-[#ffd18a]', 'text-[#1a0c33]');
+                showToast('Language switched to: English');
+            }
+        }
+
+        function handleItemClick(itemKey) {
+            dismissDrawer();
+            if (itemKey === 'curriculum') {
+                switchTab('library', 'المكتبة والمنهج الدراسي');
+            } else if (itemKey === 'achievements') {
+                switchTab('quizzes', 'الاختبارات والإنجازات');
+            } else if (itemKey === 'account') {
+                openAuthModal();
+            } else if (itemKey === 'contact') {
+                switchTab('home', 'تواصل مع المساعد الذكي');
+                document.getElementById('promptInput').focus();
+            } else if (itemKey === 'settings') {
+                showToast('إعدادات التطبيق والواقع المختلط ⚙️');
+            } else if (itemKey === 'logout') {
+                openAuthModal();
+            }
+        }
+
+        function openAuthModal() {
+            const modal = document.getElementById('authModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeAuthModal() {
+            const modal = document.getElementById('authModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function submitLogin(e) {
+            e.preventDefault();
+            const nameVal = document.getElementById('loginUsername').value.trim() || 'طالب Alpha Go';
+            document.getElementById('currentStudentName').innerText = nameVal;
+            document.getElementById('loggedInStatusBox').classList.remove('hidden');
+            closeAuthModal();
+            showToast(`أهلاً بك يا ${nameVal} ✨`);
+        }
+
+        function quickDemoLogin() {
+            document.getElementById('loginUsername').value = 'مستكشف الحضارة';
+            document.getElementById('currentStudentName').innerText = 'مستكشف الحضارة';
+            document.getElementById('loggedInStatusBox').classList.remove('hidden');
+            closeAuthModal();
+            showToast('تم تسجيل الدخول كـ مستكشف الحضارة ✨');
+        }
+
+        function performLogout() {
+            document.getElementById('loggedInStatusBox').classList.add('hidden');
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            closeAuthModal();
+            showToast('تم تسجيل الخروج بنجاح');
+        }
+
+        const mainCanvas = document.getElementById('mainBgCanvas');
+        const mainCtx = mainCanvas.getContext('2d');
+        let mainStars = [];
+
+        function resizeMainCanvas() {
+            const rect = appStage.getBoundingClientRect();
+            mainCanvas.width = rect.width || 390;
+            mainCanvas.height = rect.height || 820;
+            mainStars = Array.from({ length: 100 }, () => ({
+                x: Math.random() * mainCanvas.width,
+                y: Math.random() * mainCanvas.height,
+                r: Math.random() * 1.4 + 0.3,
+                a: Math.random() * 0.38 + 0.08
+            }));
+        }
+
+        function drawMainBg() {
+            mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+            mainStars.forEach(s => {
+                mainCtx.fillStyle = `rgba(255, 228, 193, ${s.a})`;
+                mainCtx.beginPath();
+                mainCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                mainCtx.fill();
+            });
+            requestAnimationFrame(drawMainBg);
+        }
+
+        const drawerCanvas = document.getElementById('drawerBgCanvas');
+        const drawerCtx = drawerCanvas.getContext('2d');
+        let drawerStars = [];
+
+        function resizeDrawerCanvas() {
+            const rect = drawerPanel.getBoundingClientRect();
+            drawerCanvas.width = rect.width || 310;
+            drawerCanvas.height = rect.height || 820;
+            drawerStars = Array.from({ length: 140 }, () => ({
+                x: Math.random() * drawerCanvas.width,
+                y: Math.random() * drawerCanvas.height,
+                r: Math.random() * 1.6 + 0.3,
+                a: Math.random() * 0.45 + 0.1
+            }));
+        }
+
+        function drawDrawerBg() {
+            drawerCtx.clearRect(0, 0, drawerCanvas.width, drawerCanvas.height);
+            const grad = drawerCtx.createRadialGradient(
+                drawerCanvas.width * 0.35, drawerCanvas.height * 0.38, 0,
+                drawerCanvas.width * 0.35, drawerCanvas.height * 0.38, drawerCanvas.width * 0.8
+            );
+            grad.addColorStop(0, 'rgba(130, 62, 120, 0.18)');
+            grad.addColorStop(1, 'transparent');
+            drawerCtx.fillStyle = grad;
+            drawerCtx.fillRect(0, 0, drawerCanvas.width, drawerCanvas.height);
+
+            drawerStars.forEach(s => {
+                drawerCtx.fillStyle = `rgba(255, 228, 193, ${s.a})`;
+                drawerCtx.beginPath();
+                drawerCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                drawerCtx.fill();
+            });
+            requestAnimationFrame(drawDrawerBg);
+        }
+
+        window.addEventListener('load', () => {
+            resizeMainCanvas();
+            resizeDrawerCanvas();
+            requestAnimationFrame(drawMainBg);
+            requestAnimationFrame(drawDrawerBg);
+        });
+
+        window.addEventListener('resize', () => {
+            resizeMainCanvas();
+            resizeDrawerCanvas();
+        });
+    </script>
+</body>
+</html>

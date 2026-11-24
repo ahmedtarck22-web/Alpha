@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,9 +16,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.SmartDisplay
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.SmartDisplay
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -25,8 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -36,9 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.AppLanguage
 import com.example.ui.theme.CairoFontFamily
-import com.example.ui.theme.CosmicBg
 import com.example.ui.theme.GoldAccent
-import com.example.ui.theme.GoldGlow
 
 enum class AlphaGoTab(val testTag: String) {
     HOME("nav_home"),
@@ -49,18 +51,49 @@ enum class AlphaGoTab(val testTag: String) {
 
 private data class BottomNavSpec(
     val tab: AlphaGoTab,
-    val icon: ImageVector,
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector,
     val labelAr: String,
     val labelEn: String
 )
 
 private val ALPHA_GO_TABS = listOf(
-    BottomNavSpec(AlphaGoTab.HOME, Icons.Default.Home, "الرئيسية", "Home"),
-    BottomNavSpec(AlphaGoTab.QUIZZES, Icons.AutoMirrored.Outlined.Assignment, "اختبارات", "Quizzes"),
-    BottomNavSpec(AlphaGoTab.VIDEOS, Icons.Outlined.SmartDisplay, "فيديوهات", "Videos"),
-    BottomNavSpec(AlphaGoTab.LIBRARY, Icons.AutoMirrored.Outlined.MenuBook, "المكتبة", "Library")
+    BottomNavSpec(
+        AlphaGoTab.HOME,
+        Icons.Filled.Home,
+        Icons.Outlined.Home,
+        "الرئيسية",
+        "Home"
+    ),
+    BottomNavSpec(
+        AlphaGoTab.QUIZZES,
+        Icons.AutoMirrored.Filled.Assignment,
+        Icons.AutoMirrored.Outlined.Assignment,
+        "اختبارات",
+        "Quizzes"
+    ),
+    BottomNavSpec(
+        AlphaGoTab.VIDEOS,
+        Icons.Filled.SmartDisplay,
+        Icons.Outlined.SmartDisplay,
+        "فيديوهات",
+        "Videos"
+    ),
+    BottomNavSpec(
+        AlphaGoTab.LIBRARY,
+        Icons.AutoMirrored.Filled.MenuBook,
+        Icons.AutoMirrored.Outlined.MenuBook,
+        "المكتبة",
+        "Library"
+    )
 )
 
+/**
+ * Bottom Navigation Bar matching the New UI HTML specification:
+ * - Mauve-purple gradient (#210F30 @ 0.75 -> #341845 @ 0.90)
+ * - Top 1.5dp #FFD18A @ 0.65 hairline border
+ * - Active tab icon wrapped inside a glowing rounded-12dp #FFD18A badge
+ */
 @Composable
 fun AlphaGoBottomBar(
     selectedTab: AlphaGoTab,
@@ -76,9 +109,8 @@ fun AlphaGoBottomBar(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xCC21103F),
-                        Color(0xE6180B30),
-                        Color(0xF0150929)
+                        Color(0xBF210F30),
+                        Color(0xE6341845)
                     )
                 )
             )
@@ -86,79 +118,70 @@ fun AlphaGoBottomBar(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(1.2.dp)
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            GoldAccent.copy(alpha = 0.85f),
-                            GoldGlow,
-                            GoldAccent.copy(alpha = 0.85f),
-                            Color.Transparent
-                        )
-                    )
-                )
+                .height(1.5.dp)
+                .background(GoldAccent.copy(alpha = 0.65f))
         )
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(horizontal = 8.dp, vertical = 5.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
             ALPHA_GO_TABS.forEach { item ->
                 val isSelected = selectedTab == item.tab
-                val tint = if (isSelected) GoldGlow else Color(0xFF9F92BD)
+                val tint = if (isSelected) GoldAccent else GoldAccent.copy(alpha = 0.85f)
                 val label = if (isArabic) item.labelAr else item.labelEn
+                val badgeShape = RoundedCornerShape(12.dp)
 
-                Box(
+                Column(
                     modifier = Modifier
                         .weight(1f)
                         .heightIn(min = 52.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .drawBehind {
-                            if (isSelected) {
-                                drawCircle(
-                                    brush = Brush.radialGradient(
-                                        colors = listOf(
-                                            GoldGlow.copy(alpha = 0.34f),
-                                            GoldAccent.copy(alpha = 0.12f),
-                                            Color.Transparent
-                                        ),
-                                        center = Offset(size.width * 0.5f, size.height * 0.24f),
-                                        radius = size.width * 0.68f
-                                    ),
-                                    center = Offset(size.width * 0.5f, size.height * 0.24f),
-                                    radius = size.width * 0.68f
-                                )
-                            }
-                        }
+                        .clip(RoundedCornerShape(14.dp))
                         .clickable { onSelectTab(item.tab) }
-                        .padding(vertical = 6.dp)
+                        .padding(vertical = 4.dp)
                         .testTag(item.tab.testTag),
-                    contentAlignment = Alignment.Center
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                    Box(
+                        modifier = Modifier
+                            .then(
+                                if (isSelected) {
+                                    Modifier.shadow(12.dp, badgeShape, ambientColor = GoldAccent, spotColor = GoldAccent)
+                                } else {
+                                    Modifier
+                                }
+                            )
+                            .clip(badgeShape)
+                            .background(if (isSelected) GoldAccent.copy(alpha = 0.15f) else Color.Transparent)
+                            .border(
+                                width = 1.dp,
+                                color = if (isSelected) GoldAccent.copy(alpha = 0.50f) else Color.Transparent,
+                                shape = badgeShape
+                            )
+                            .padding(6.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = item.icon,
+                            imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
                             contentDescription = label,
                             tint = tint,
-                            modifier = Modifier.size(23.dp)
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = label,
-                            fontFamily = CairoFontFamily,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            fontSize = 11.5.sp,
-                            color = tint,
-                            maxLines = 1
+                            modifier = Modifier.size(21.dp)
                         )
                     }
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = label,
+                        fontFamily = CairoFontFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp,
+                        color = GoldAccent,
+                        maxLines = 1
+                    )
                 }
             }
         }

@@ -296,7 +296,7 @@ fun AuthSignInDialog(
                             .testTag("save_local_profile_button"),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF1E293B),
+                            containerColor = Color(0xFF49305F),
                             contentColor = RoyalGoldLight
                         )
                     ) {
@@ -317,8 +317,8 @@ fun AuthSignInDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0x26102A43))
-                            .border(1.dp, EgyptianCyan.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+                            .background(Color(0x6649305F))
+                            .border(1.dp, RoyalGold.copy(alpha = 0.55f), RoundedCornerShape(16.dp))
                             .padding(14.dp)
                     ) {
                         Row(

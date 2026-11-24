@@ -389,7 +389,10 @@ fun RamsesApp(viewModel: RamsesViewModel) {
                         onOpenApiKeyDialog = { showApiKeyDialog = true },
                         onOpenRagDialog = { selectedTab = AlphaGoTab.LIBRARY },
                         onOpen3DArtifactsDialog = {},
-                        onNewChatClick = { viewModel.startNewSession() },
+                        onNewChatClick = {
+                            selectedTab = AlphaGoTab.HOME
+                            viewModel.startNewSession()
+                        },
                         onVoiceCallClick = {
                             val hasPermission = ContextCompat.checkSelfPermission(
                                 context,
@@ -572,13 +575,13 @@ fun RamsesApp(viewModel: RamsesViewModel) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(horizontal = 14.dp, vertical = 6.dp)
+                                    .padding(horizontal = 26.dp, vertical = 6.dp)
                             ) {
                                 if (!hasMessages) {
                                     Box(
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .padding(horizontal = 4.dp, vertical = 18.dp),
+                                            .padding(horizontal = 4.dp, vertical = 14.dp),
                                         contentAlignment = Alignment.TopCenter
                                     ) {
                                         AlphaGoGlbStageCard(

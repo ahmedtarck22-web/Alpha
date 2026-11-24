@@ -563,8 +563,8 @@ fun ChatMessageBubble(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(7.dp))
-                                        .background(Color(0x24102A43))
-                                        .border(0.5.dp, RoyalGold.copy(alpha = 0.24f), RoundedCornerShape(7.dp))
+                                        .background(Color(0x4D3D1E59))
+                                        .border(0.5.dp, RoyalGold.copy(alpha = 0.30f), RoundedCornerShape(7.dp))
                                         .clickable {
                                             if (isCloudBookRef) {
                                                 val toastLabel = if (compactPageLabel.isNotBlank()) {

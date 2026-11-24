@@ -35,9 +35,12 @@ class MainActivityCrashRegressionTest {
         composeTestRule.onNodeWithTag("start_journey_button").assertIsDisplayed().performClick()
         composeTestRule.waitForIdle()
 
-        // 1. Go Alpha Header, Dedicated GLB Slot, Input Bar, and 4-tab Bottom Bar
+        // 1. Go Alpha Header (no language pill), Dedicated GLB Slot, Input Bar, and 4-tab Bottom Bar
         composeTestRule.onNodeWithTag("menu_button").assertIsDisplayed()
-        composeTestRule.onNodeWithTag("header_language_toggle").assertIsDisplayed()
+        assertTrue(
+            "Expected language toggle to be hidden from top header",
+            composeTestRule.onAllNodesWithTag("header_language_toggle").fetchSemanticsNodes().isEmpty()
+        )
         composeTestRule.onNodeWithTag("header_alpha_go_logo").assertIsDisplayed()
         composeTestRule.onNodeWithTag("profile_button").assertIsDisplayed()
         composeTestRule.onNodeWithTag("home_glb_slot").assertIsDisplayed()
@@ -95,14 +98,22 @@ class MainActivityCrashRegressionTest {
         composeTestRule.onNodeWithTag("gemini_live_close_button").assertIsDisplayed().performClick()
         composeTestRule.waitForIdle()
 
-        // 4. Open Control Center Drawer and verify updated IMG_1050 menu items & removed legacy items
+        // 4. Open Control Center Drawer and verify New UI items, language toggle, and integrated old Control Center tools
         composeTestRule.onNodeWithTag("menu_button").performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithTag("drawer_my_account_item").assertIsDisplayed()
         composeTestRule.onNodeWithTag("drawer_curriculum_item").assertIsDisplayed()
         composeTestRule.onNodeWithTag("drawer_achievements_item").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("drawer_language_toggle").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("side_menu_drawer_scroll")
+            .performScrollToNode(hasTestTag("drawer_contact_item"))
         composeTestRule.onNodeWithTag("drawer_contact_item").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("side_menu_drawer_scroll")
+            .performScrollToNode(hasTestTag("drawer_settings_item"))
         composeTestRule.onNodeWithTag("drawer_settings_item").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("side_menu_drawer_scroll")
+            .performScrollToNode(hasTestTag("drawer_new_chat_item"))
+        composeTestRule.onNodeWithTag("drawer_new_chat_item").assertIsDisplayed()
         composeTestRule.onNodeWithTag("drawer_sign_out_item").assertIsDisplayed()
         assertTrue(
             "Expected RAG drawer item to be removed from Control Center",
@@ -116,6 +127,8 @@ class MainActivityCrashRegressionTest {
             "Expected Ramses 3D switcher to be removed from Control Center",
             composeTestRule.onAllNodesWithTag("drawer_gems_section").fetchSemanticsNodes().isEmpty()
         )
+        composeTestRule.onNodeWithTag("side_menu_drawer_scroll")
+            .performScrollToNode(hasTestTag("drawer_curriculum_item"))
         composeTestRule.onNodeWithTag("drawer_curriculum_item").performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithTag("library_tab_view").assertIsDisplayed()

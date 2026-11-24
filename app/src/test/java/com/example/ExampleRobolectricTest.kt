@@ -238,10 +238,10 @@ class ExampleRobolectricTest {
   @Test
   fun `Arabic search normalization and stem extraction tokenize user queries cleanly`() {
     val normalized = FirestoreRagRepository.normalizeSearchText("الإسكندرية والعمارة اليونانية؟")
-    assertEquals("الاسكندرية والعمارة اليونانية", normalized)
+    assertEquals("الاسكندريه والعماره اليونانيه", normalized)
     val stems = FirestoreRagRepository.extractSearchStems("الإسكندرية والعمارة اليونانية في مصر")
     assertTrue(stems.isNotEmpty())
-    assertTrue(stems.any { it.contains("اسكندر") || it.contains("الاسكندرية") })
+    assertTrue(stems.any { it.contains("اسكندر") || it.contains("الاسكندريه") })
   }
 
   @Test

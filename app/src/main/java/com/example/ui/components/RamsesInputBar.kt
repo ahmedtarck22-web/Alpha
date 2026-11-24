@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -51,7 +53,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -75,13 +80,19 @@ import com.example.ui.theme.CosmicCard
 import com.example.ui.theme.EgyptianCyan
 import com.example.ui.theme.GoldAccent
 import com.example.ui.theme.GoldBorder
-import com.example.ui.theme.GoldBorderSubtle
 import com.example.ui.theme.GoldGlow
+import com.example.ui.theme.LiquidGlassPillBottom
+import com.example.ui.theme.LiquidGlassPillTop
 import com.example.ui.theme.RoseError
-import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
-import com.example.ui.theme.TextTertiary
 
+/**
+ * Wide Liquid Glass Input Pill matching the New UI `.liquid-glass-pill` + `#plusMenuPopover`:
+ * - Left: Glowing gradient (+) button (rotates 45deg when open) + subtle vertical gold divider
+ * - Center: Bare transparent text input ("اكتب هنا...") in #FFD18A (no heavy recessed inner box)
+ * - Right: Mic medallion + subtle vertical gold divider + Call medallion
+ * - Plus Popover: Frosted mauve liquid-glass card above (+) with "تحليل الصور" and "البحث العميق"
+ */
 @Composable
 fun RamsesInputBar(
     inputText: String,
@@ -102,33 +113,42 @@ fun RamsesInputBar(
     val focusManager = LocalFocusManager.current
     val isAr = appLanguage == AppLanguage.ARABIC
     var showPlusMenu by remember { mutableStateOf(false) }
+    val plusRotation by animateFloatAsState(
+        targetValue = if (showPlusMenu) 45f else 0f,
+        label = "plus_rotation"
+    )
 
-    // Exact LTR capsule arrangement from IMG_1050:
-    // Left: [Floating card & (+)] | Center: [اكتب هنا...] | Right: [🎤] [📞]
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Column(
             modifier = modifier
                 .fillMaxWidth()
                 .imePadding()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .padding(horizontal = 24.dp, vertical = 6.dp)
         ) {
-            // Luminous Frosted Plus Menu matching IMG_1050
+            // Luminous Frosted Liquid-Glass Plus Menu Popover
             AnimatedVisibility(
                 visible = showPlusMenu,
                 enter = fadeIn() + slideInVertically { it / 2 },
                 exit = fadeOut() + slideOutVertically { it / 2 }
             ) {
-                Surface(
+                Box(
                     modifier = Modifier
-                        .padding(bottom = 6.dp)
-                        .widthIn(min = 186.dp, max = 224.dp)
-                        .shadow(20.dp, RoundedCornerShape(16.dp), ambientColor = GoldGlow, spotColor = GoldAccent)
-                        .testTag("plus_popup_menu"),
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color(0xF22D1C4D),
-                    border = BorderStroke(1.2.dp, GoldGlow.copy(alpha = 0.78f))
+                        .padding(bottom = 8.dp)
+                        .widthIn(min = 184.dp, max = 224.dp)
+                        .shadow(22.dp, RoundedCornerShape(16.dp), ambientColor = GoldAccent, spotColor = GoldAccent)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xEB663672),
+                                    Color(0xF52A143E)
+                                )
+                            )
+                        )
+                        .border(1.5.dp, GoldAccent.copy(alpha = 0.80f), RoundedCornerShape(16.dp))
+                        .testTag("plus_popup_menu")
                 ) {
-                    Column(modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)) {
+                    Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -143,25 +163,25 @@ fun RamsesInputBar(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
+                            Icon(
+                                imageVector = Icons.Outlined.CenterFocusWeak,
+                                contentDescription = null,
+                                tint = GoldAccent,
+                                modifier = Modifier.size(18.dp)
+                            )
                             Text(
                                 text = if (isAr) "تحليل الصور" else "Image Analysis",
                                 fontFamily = CairoFontFamily,
                                 fontSize = 13.5.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFFF5EFFC)
-                            )
-                            Icon(
-                                imageVector = Icons.Outlined.CenterFocusWeak,
-                                contentDescription = null,
-                                tint = Color(0xFFEBD2A0),
-                                modifier = Modifier.size(18.dp)
+                                color = GoldAccent
                             )
                         }
 
                         HorizontalDivider(
-                            thickness = 0.8.dp,
-                            color = GoldBorderSubtle,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
+                            thickness = 1.dp,
+                            color = GoldAccent.copy(alpha = 0.35f),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
 
                         Row(
@@ -181,18 +201,18 @@ fun RamsesInputBar(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = null,
+                                tint = if (isSearchGroundingEnabled) GoldGlow else GoldAccent,
+                                modifier = Modifier.size(18.dp)
+                            )
                             Text(
                                 text = if (isAr) "البحث العميق" else "Deep Book Search",
                                 fontFamily = CairoFontFamily,
                                 fontSize = 13.5.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = if (isSearchGroundingEnabled) GoldGlow else Color(0xFFF5EFFC)
-                            )
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = null,
-                                tint = if (isSearchGroundingEnabled) GoldGlow else Color(0xFFEBD2A0),
-                                modifier = Modifier.size(18.dp)
+                                color = if (isSearchGroundingEnabled) GoldGlow else GoldAccent
                             )
                         }
                     }
@@ -211,10 +231,10 @@ fun RamsesInputBar(
                 if (validPreviewBitmap != null) {
                     Box(
                         modifier = Modifier
-                            .padding(bottom = 6.dp)
+                            .padding(bottom = 8.dp)
                             .clip(RoundedCornerShape(16.dp))
                             .background(CosmicCard.copy(alpha = 0.92f))
-                            .border(1.dp, GoldBorder, RoundedCornerShape(16.dp))
+                            .border(1.2.dp, GoldBorder, RoundedCornerShape(16.dp))
                             .padding(8.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -259,58 +279,96 @@ fun RamsesInputBar(
                 }
             }
 
-            // Sleek Slim Cosmic Purple & Gold Capsule
-            Surface(
+            // Unified Wide Liquid Glass Pill matching HTML `.liquid-glass-pill`
+            val pillShape = RoundedCornerShape(50)
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .shadow(16.dp, RoundedCornerShape(28.dp), ambientColor = GoldGlow.copy(alpha = 0.38f), spotColor = GoldAccent.copy(alpha = 0.45f)),
-                shape = RoundedCornerShape(28.dp),
-                color = Color(0xDB241242),
-                border = BorderStroke(
-                    width = 1.1.dp,
-                    color = if (isListeningVoiceTyping) EgyptianCyan else Color(0x99DFB054)
-                )
+                    .shadow(
+                        elevation = 18.dp,
+                        shape = pillShape,
+                        ambientColor = GoldAccent.copy(alpha = 0.35f),
+                        spotColor = GoldAccent.copy(alpha = 0.42f)
+                    )
+                    .clip(pillShape)
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                LiquidGlassPillTop,
+                                LiquidGlassPillBottom
+                            )
+                        )
+                    )
+                    .border(
+                        width = 1.8.dp,
+                        color = if (isListeningVoiceTyping) EgyptianCyan else GoldAccent.copy(alpha = 0.85f),
+                        shape = pillShape
+                    )
+                    .drawBehind {
+                        // Top specular streak matching `.liquid-glass-pill::before`
+                        drawLine(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color(0xEBFFFCF0),
+                                    Color.Transparent
+                                )
+                            ),
+                            start = Offset(size.width * 0.16f, 1.5.dp.toPx()),
+                            end = Offset(size.width * 0.84f, 1.5.dp.toPx()),
+                            strokeWidth = 1.5.dp.toPx()
+                        )
+                    }
+                    .padding(horizontal = 10.dp, vertical = 7.dp)
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 6.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Slim Glowing Golden (+) Button
+                    // Left: Glowing Mauve-Gold (+) Button
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
-                            .shadow(12.dp, CircleShape, ambientColor = GoldGlow, spotColor = GoldAccent)
+                            .size(40.dp)
+                            .shadow(10.dp, CircleShape, ambientColor = GoldAccent, spotColor = GoldAccent)
                             .clip(CircleShape)
                             .background(
-                                Brush.radialGradient(
-                                    colors = listOf(GoldAccent.copy(alpha = 0.34f), Color(0xFF2D1852))
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color(0x66B8659B),
+                                        Color(0xBF4F245E)
+                                    )
                                 )
                             )
-                            .border(1.3.dp, GoldGlow.copy(alpha = 0.88f), CircleShape)
+                            .border(1.5.dp, GoldAccent.copy(alpha = 0.85f), CircleShape)
                             .clickable { showPlusMenu = !showPlusMenu }
                             .testTag("attach_button"),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = if (showPlusMenu) Icons.Default.Close else Icons.Default.Add,
-                            contentDescription = if (isAr) "خيارات التحليل والبحث" else "Analysis & Search Options",
-                            tint = GoldGlow,
-                            modifier = Modifier.size(19.dp)
+                            imageVector = Icons.Default.Add,
+                            contentDescription = if (isAr) "أدوات إضافية" else "Additional Tools",
+                            tint = GoldAccent,
+                            modifier = Modifier
+                                .size(21.dp)
+                                .rotate(plusRotation)
                         )
                     }
 
-                    // Slim Recessed Purple Input Pill
+                    // Divider
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 8.dp)
+                            .width(1.dp)
+                            .height(20.dp)
+                            .background(GoldAccent.copy(alpha = 0.40f))
+                    )
+
+                    // Center: Bare Transparent Text Input matching HTML `bg-transparent`
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .heightIn(min = 34.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color(0xCC180B30))
-                            .border(0.9.dp, Color(0x45A88848), RoundedCornerShape(20.dp))
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                            .heightIn(min = 36.dp)
+                            .padding(horizontal = 4.dp),
                         contentAlignment = if (isAr) Alignment.CenterEnd else Alignment.CenterStart
                     ) {
                         if (inputText.isEmpty()) {
@@ -321,8 +379,9 @@ fun RamsesInputBar(
                                     if (isAr) "اكتب هنا..." else "Type here..."
                                 },
                                 fontFamily = CairoFontFamily,
-                                fontSize = 13.sp,
-                                color = if (isListeningVoiceTyping) EgyptianCyan else TextTertiary,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp,
+                                color = if (isListeningVoiceTyping) EgyptianCyan else GoldAccent.copy(alpha = 0.75f),
                                 textAlign = if (isAr) TextAlign.End else TextAlign.Start
                             )
                         }
@@ -335,9 +394,9 @@ fun RamsesInputBar(
                                 .testTag("chat_input_field"),
                             textStyle = TextStyle(
                                 fontFamily = CairoFontFamily,
-                                fontSize = 13.5.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = TextPrimary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = GoldAccent,
                                 textAlign = if (isAr) TextAlign.End else TextAlign.Start,
                                 textDirection = if (isAr) TextDirection.Rtl else TextDirection.Ltr
                             ),
@@ -357,13 +416,18 @@ fun RamsesInputBar(
                         )
                     }
 
-                    // Dynamic Send Button (appears when user types or attaches image)
+                    // Dynamic Send Button when user types or attaches an image
                     if (inputText.isNotBlank() || selectedImageBitmap != null) {
+                        Spacer(modifier = Modifier.width(6.dp))
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(CircleShape)
-                                .background(GoldAccent)
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(GoldAccent, GoldGlow)
+                                    )
+                                )
                                 .clickable {
                                     onSendMessage(inputText)
                                     focusManager.clearFocus()
@@ -381,37 +445,44 @@ fun RamsesInputBar(
                         }
                     }
 
-                    // Slim Purple Mic Medallion
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    // Mic Button
                     Box(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF281548))
-                            .border(1.dp, GoldBorder, CircleShape)
+                            .background(Color(0x73562963))
+                            .border(1.dp, GoldAccent.copy(alpha = 0.60f), CircleShape)
                             .clickable { onMicVoiceTypingClick() }
                             .testTag("mic_button"),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = if (isListeningVoiceTyping) Icons.Default.Stop else Icons.Outlined.Mic,
-                            contentDescription = if (isAr) "تسجيل رسالة صوتية" else "Voice input",
-                            tint = if (isListeningVoiceTyping) RoseError else GoldGlow,
+                            contentDescription = if (isAr) "تسجيل صوتي" else "Voice input",
+                            tint = if (isListeningVoiceTyping) RoseError else GoldAccent,
                             modifier = Modifier.size(18.dp)
                         )
                     }
 
-                    // Slim Purple Live Call Medallion
+                    // Divider
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
+                            .padding(horizontal = 8.dp)
+                            .width(1.dp)
+                            .height(20.dp)
+                            .background(GoldAccent.copy(alpha = 0.40f))
+                    )
+
+                    // Right: Call Button
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
                             .shadow(10.dp, CircleShape, ambientColor = GoldAccent, spotColor = GoldAccent)
                             .clip(CircleShape)
-                            .background(
-                                Brush.radialGradient(
-                                    colors = listOf(GoldAccent.copy(alpha = 0.22f), Color(0xFF281548))
-                                )
-                            )
-                            .border(1.1.dp, GoldAccent.copy(alpha = 0.82f), CircleShape)
+                            .background(Color(0xA6562963))
+                            .border(1.5.dp, GoldAccent.copy(alpha = 0.80f), CircleShape)
                             .clickable {
                                 showPlusMenu = false
                                 onGeminiLiveClick()
@@ -421,8 +492,8 @@ fun RamsesInputBar(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Phone,
-                            contentDescription = if (isAr) "مكالمة صوتية مباشرة" else "Live Voice Call",
-                            tint = GoldGlow,
+                            contentDescription = if (isAr) "مكالمة" else "Live Voice Call",
+                            tint = GoldAccent,
                             modifier = Modifier.size(18.dp)
                         )
                     }
